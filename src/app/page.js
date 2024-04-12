@@ -461,13 +461,19 @@ export function Loader(props) {
 }
 
 export default function Home() {
-
   const [balances, setBalances] = useState([])
   const [loading, setLoading] = useState(false)
-  const [address, setAddress] = useState(localStorage.getItem("address") || "")
+  const [address, setAddress] = useState("")
   const [error, setError] = useState(null)
   const [timer, setTimer] = useState(30)
-  const [rpc, setRpc] = useState(localStorage.getItem("rpc") ||"https://cloudflare-eth.com")
+  const [rpc, setRpc] = useState("")
+
+  useEffect(() => {
+    if(localStorage.getItem("address")){
+      setAddress(localStorage.getItem("address"))
+    }
+    setRpc(localStorage.getItem("rpc") ? localStorage.getItem("rpc") : "https://cloudflare-eth.com")
+  }, [])
 
   const config = createConfig({
     chains: [mainnet],
@@ -561,23 +567,29 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if(isAddress(getAddress(address))) {
-      getBalances(); // Initial fetch on component mount
-      let interval = setInterval(() => {
-        getBalances(); // Re-fetch every 10 seconds
-        setTimer(31);  // Reset the timer
-      }, 31000);
-  
-      const countdown = setInterval(() => {
-        setTimer(prevTimer => prevTimer > 0 ? prevTimer - 1 : 30);
-      }, 1000); // Countdown every second, reset to 10 if reaches 0
-  
-      return () => {
-        clearInterval(interval);
-        clearInterval(countdown);
-      };
-    } else {
-      setError(`Invalid address: ${address}`)
+    if(address) {
+      try{
+        if(!isAddress(getAddress(address))) {
+          setError(`Invalid address ${address}`)
+          return
+        }
+        getBalances(); // Initial fetch on component mount
+        let interval = setInterval(() => {
+          getBalances(); // Re-fetch every 10 seconds
+          setTimer(31);  // Reset the timer
+        }, 31000);
+    
+        const countdown = setInterval(() => {
+          setTimer(prevTimer => prevTimer > 0 ? prevTimer - 1 : 30);
+        }, 1000); // Countdown every second, reset to 10 if reaches 0
+    
+        return () => {
+          clearInterval(interval);
+          clearInterval(countdown);
+        };
+      }catch(e){
+        setError(`Invalid address ${address}` )
+      }
     }
   }, [address, rpc]);
   
@@ -623,7 +635,7 @@ export default function Home() {
                                 className="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg dark:bg-black/50 gap-2 relative"
                               >
                                 <h2 className="text-2xl font-bold ">
-                                  <a className="after:content-[''] after:z-10 after:absolute after:inset-0 flex gap-2" href={`https://etherscan.io/token/${tokens[index].token}?a=${getAddress(address)}`} target="_blank">
+                                  <a className="after:content-[''] after:z-10 after:absolute after:inset-0 flex gap-2" href={`https://etherscan.io/token/${tokens[index].token}?a=${address}`} target="_blank">
                                   <Image
                                     src={tokens[index].logo}
                                     alt={tokens[index].name}
