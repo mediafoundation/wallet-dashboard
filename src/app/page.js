@@ -142,49 +142,63 @@ export default function Home() {
     let res = await fetch(`/api/user?address=${address}`);
     let userData = await res.json();
   
-  
     // Get the current block number from the public client
     let blockNumber = await publicClient.getBlockNumber();
     blockNumber = Number(blockNumber);
-    
-    // If user has previously scanned blocks, use these to define start and end
+  
+    console.log("genesisBlock", genesisBlock);
+    console.log("blockNumber", blockNumber);
+  
+    // Variables for the start and end of the block range to scan
     let startBlock, endBlock;
-    if (userData && userData.firstblock && userData.lastblock) {
-      // Start scanning from either the latest block or just below the user's last scanned block
-      endBlock = Number(userData.firstblock) - 1;  // Start below the previously scanned range
-      startBlock = Math.max(genesisBlock, endBlock - 1000 + 1);
-    } else {
-      // No previously scanned data; start with the latest block range
+  
+    // First, scan from the last scanned block up to the current block, handling in batches if necessary
+    if (userData && userData.lastblock) {
       endBlock = blockNumber;
-      startBlock = Math.max(genesisBlock, blockNumber - 1000 + 1);
-    }
-  
-    // Loop to handle batches from latest to earliest, excluding previously scanned ranges
-    while (startBlock >= genesisBlock && endBlock >= startBlock) {
-      // Fetch transactions in batches
-
-      console.log(`Fetching transfers from block ${startBlock} to ${endBlock}`);
-      let txs = await fetch(`/api/getTransfers?from=${address}&rpc=${rpc}&fromBlock=${startBlock}&toBlock=${endBlock}`);
-      let _data = await txs.json();
-      console.log(_data);
-  
-      // Prepare for the next batch
-      endBlock = startBlock - 1;
-      startBlock = Math.max(genesisBlock, endBlock - 1000 + 1);
-      //sleep
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-  
-    // Handle blocks after the last scanned block if necessary
-    if (userData && userData.lastblock && Number(userData.lastblock) < blockNumber) {
       startBlock = Number(userData.lastblock) + 1;
+  
+      while (startBlock <= endBlock) {
+        let nextEndBlock = Math.min(startBlock + 9999, endBlock); // Calculate the next block to end this batch
+        await fetchAndLogTransfers(startBlock, nextEndBlock);
+        startBlock = nextEndBlock + 1; // Prepare the start of the next batch
+      }
+    }
+  
+    // Second, scan from just below the first scanned block down to the genesis block, handling in batches if needed
+    if (userData && userData.firstblock) {
+      endBlock = Number(userData.firstblock) - 1;
+      startBlock = Math.max(genesisBlock, endBlock - 9999);
+  
+      while (startBlock > genesisBlock) {
+        await fetchAndLogTransfers(startBlock, endBlock);
+        endBlock = startBlock - 1;
+        startBlock = Math.max(genesisBlock, endBlock - 9999);
+      }
+    }
+  
+    // If there are no user data regarding firstblock and lastblock, scan everything from the current block to the genesis block in batches
+    if (!(userData && (userData.firstblock || userData.lastblock))) {
       endBlock = blockNumber;
-      console.log(`Fetching transfers from block ${startBlock} to ${endBlock}`);
-      let txs = await fetch(`/api/getTransfers?from=${address}&rpc=${rpc}&fromBlock=${startBlock}&toBlock=${endBlock}`);
-      let _data = await txs.json();
-      console.log(_data);
+      startBlock = Math.max(genesisBlock, endBlock - 9999);
+      
+      while (startBlock >= genesisBlock) {
+        await fetchAndLogTransfers(startBlock, endBlock);
+        endBlock = startBlock - 1;
+        startBlock = Math.max(genesisBlock, endBlock - 9999);
+      }
     }
   };
+  
+  async function fetchAndLogTransfers(startBlock, endBlock) {
+    console.log(`Fetching transfers from block ${startBlock} to ${endBlock}`);
+    let txs = await fetch(`/api/getTransfers?from=${address}&rpc=${rpc}&fromBlock=${startBlock}&toBlock=${endBlock}`);
+    let _data = await txs.json();
+    console.log(_data);
+    // Sleep between API calls to reduce load
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  
+  
   
   const getBalances = async () => {
     if(!address) return
