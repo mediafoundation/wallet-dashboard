@@ -9,7 +9,7 @@ export async function GET(request) {
 
   try {
    
-    const transactions = await client.sql`SELECT * FROM Transactions WHERE _from = ${address};`;
+    const transactions = await client.sql`SELECT * FROM Transactions WHERE _from = ${address} OR _to = ${address};`;
     return NextResponse.json( transactions.rows );
 
   } catch (error) {

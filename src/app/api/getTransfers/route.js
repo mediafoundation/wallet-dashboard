@@ -61,7 +61,7 @@ export async function GET(request) {
 
       //si los bloques ya fueron procesados terminar la ejecucion
       if(fromBlock >= user.rows[0].firstblock && toBlock <= user.rows[0].lastblock){
-        const transactions = await client.sql`SELECT * FROM Transactions WHERE _from = ${from} and blocknumber >= ${fromBlock} and blocknumber <= ${toBlock};`;
+        const transactions = await client.sql`SELECT * FROM Transactions WHERE (_from = ${from} OR _to = ${from}) AND blocknumber >= ${fromBlock} AND blocknumber <= ${toBlock};`;
         return NextResponse.json(transactions.rows);
       }
 
@@ -82,7 +82,7 @@ export async function GET(request) {
       console.log(`Transaction ${transactionHash} from ${args.from} to ${args.to} for ${args.value} tokens of ${address} at block ${blockNumber}.`);
 
       // Check if transaction already exists in the database
-      const existingTransaction = await client.sql`SELECT * FROM Transactions WHERE transactionHash = ${transactionHash} AND _from = ${args.from};`;
+      const existingTransaction = await client.sql`SELECT * FROM Transactions WHERE transactionHash = ${transactionHash};`;
 
       // If transaction does not exist, insert it into the database
       if (existingTransaction.rowCount === 0) {
@@ -101,7 +101,7 @@ export async function GET(request) {
       }
     }
 
-    const transactions = await client.sql`SELECT * FROM Transactions WHERE _from = ${from} and blocknumber >= ${fromBlock} and blocknumber <= ${toBlock};`;
+    const transactions = await client.sql`SELECT * FROM Transactions WHERE (_from = ${from} OR _to = ${from}) AND blocknumber >= ${fromBlock} AND blocknumber <= ${toBlock};`;
     
     return NextResponse.json(transactions.rows);
 

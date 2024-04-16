@@ -5,9 +5,40 @@ import { useEffect, useState } from "react"
 import { http, createConfig } from "wagmi"
 import { getPublicClient } from '@wagmi/core'
 import { mainnet } from "wagmi/chains"
-import { isAddress, getAddress, formatUnits } from 'viem'
-import { fetchBalances, Loader, tokens, toLocaleString, CogIcon, genesisBlock } from "../utils"
+import { isAddress, getAddress, formatUnits, formatEther } from 'viem'
+import { fetchBalances, Loader, tokens, toLocaleString, CogIcon, genesisBlock, getTransfers as _getTransfers } from "../utils"
 import Modal from '../components/Modal'
+
+const interval = 30
+
+
+const calculateInterest = ({transfers, balances}) => {
+  let interest = 0n
+  tokens.forEach((token) => {
+    const transfer_from = transfers.filter(transfer => transfer._from.toLowerCase() == token.contract.toLowerCase())
+    const transfer_to = transfers.filter(transfer => transfer._to.toLowerCase() == token.contract.toLowerCase())
+
+    const deposited = transfer_to
+    .reduce((acc, transfer) => acc + BigInt(transfer._value), 0n);
+
+    const withdrawn = transfer_from
+    .reduce((acc, transfer) => acc + BigInt(transfer._value), 0n);
+
+    const _total = deposited - withdrawn;
+
+    let _interest = BigInt(balances.find(balance => balance.symbol === token.description).value) - _total
+
+    //give 18 decimals to usdt and usdc so we can add up with DAI that has 18 decimals
+    if(token.name === "USDT" || token.name === "USDC"){
+      _interest = _interest * 10n ** 12n;
+    }
+    //total += _total, 
+    interest += _interest
+  }
+  )
+  //console.log("total", total)
+  return toLocaleString(Number(formatEther(interest)))
+}
 
 
 const Transfers = ({ transfers, token, balance }) => {
@@ -29,8 +60,8 @@ const Transfers = ({ transfers, token, balance }) => {
   
 
   return transfers.length > 0 ? (
-    <div className="relative z-50 text-center">
-      <span className="text-black/70 dark:text-white/70">Earnings:</span> {toLocaleString(Number(interest))}
+    <div className="relative z-50 text-center text-sm font-mono ">
+      <span className="text-black/70 dark:text-white/70">EARNINGS:</span> {toLocaleString(Number(interest))}
       <Modal
         title={`${token.name} Transactions`}
         content={
@@ -95,6 +126,9 @@ const Position = ({ balance, index, address, transfers }) => {
           <p className="text-2xl font-bold font-mono py-2">
             {toLocaleString(Number(balance.formatted))}
           </p>
+          <p className="text-sm font-mono py-2">
+            <span className="text-black/70 dark:text-white/70">TVL:</span> {toLocaleString(Number(balance.underlying.formatted))}
+          </p>
         </div>
 
         <Transfers transfers={transfers} token={tokens[index]} balance={balance} />
@@ -108,7 +142,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [address, setAddress] = useState("")
   const [error, setError] = useState(null)
-  const [timer, setTimer] = useState(30)
+  const [timer, setTimer] = useState(interval)
   const [rpc, setRpc] = useState("")
   const [transfers, setTransfers] = useState([])
 
@@ -246,26 +280,27 @@ export default function Home() {
         //getLastBlock();
         getBalances(); // Initial fetch on component mount
         getTransfers();
-        let interval = setInterval(() => {
-          getBalances(); // Re-fetch every 10 seconds
-          getTransfers();
-          setTimer(31);  // Reset the timer
-        }, 31000);
-    
-        const countdown = setInterval(() => {
-          setTimer(prevTimer => prevTimer > 0 ? prevTimer - 1 : 30);
-        }, 1000); // Countdown every second, reset to 10 if reaches 0
 
+        const countdown = setInterval(() => {
+          setTimer(prevTimer => prevTimer > 0 ? prevTimer - 1 : interval);
+        }, 1000); 
+
+        return () => clearInterval(countdown);
     
-        return () => {
-          clearInterval(interval);
-          clearInterval(countdown);
-        };
+
       }catch(e){
         setError(`Invalid address ${address}` )
       }
     }
   }, [address, rpc]);
+
+  useEffect(() => {
+    if(timer === 0) {
+      getBalances();
+      getTransfers();
+      setTimer(interval);
+    }
+  }, [timer]);
 
  
   
@@ -274,6 +309,7 @@ export default function Home() {
         <div className="z-10 max-w-3xl text-lg mx-auto mb-4">
           
           <div className="bg-gradient-to-b from-zinc-200 px-5 py-4 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit w-auto  rounded-xl border bg-gray-200 flex leading-none items-center">
+
           <Modal
             title={"Settings"}
 
@@ -307,12 +343,15 @@ export default function Home() {
               { role: "confirm", toClose: true, classes: "bg-green-800 px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200", label: "Confirm" }
             ]}
           >
-            <button className="flex items-center gap-2"><CogIcon /> <span>Settings</span></button>
+            <button className="flex items-center gap-2"><CogIcon className="w-6 h-6 sm:h-7 sm:w-7"/></button>
           </Modal>
-            {loading ? <Loader className="w-4 h-4 ml-auto" /> : (
-              <span className="font-bold ml-auto">
-                {toLocaleString(balances.reduce((acc, balance) => acc + Number(balance.formatted), 0))}
-              </span>
+            {loading ? <Loader className="w-6 h-6 sm:h-7 sm:w-7 ml-auto" /> : (
+              <div className="flex gap-3 ml-auto text-base sm:text-lg">
+                <span className="font-semibold ml-auto">
+                  {toLocaleString(balances.reduce((acc, balance) => acc + Number(balance.formatted), 0))}
+                </span>
+                {transfers.length > 0 && balances && (<> &middot; <span>{calculateInterest({transfers, balances})}</span></>)}
+              </div>
             )}
           </div>
         </div>
@@ -320,8 +359,8 @@ export default function Home() {
           <div className="w-full">
             {error ? <p className="text-red-500 text-center max-w-2xl">{error}</p> : (
               <>
-                <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-                  {balances.map((balance, index) => balance.value > 0 && (
+                <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                  {balances.map((balance, index) => /* balance.value > 0 && */ (
                     <div key={index} className="w-full">
                       <Position balance={balance} index={index} address={address} transfers={transfers}/>
                     </div>
