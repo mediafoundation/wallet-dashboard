@@ -571,12 +571,12 @@ export function Loader(props) {
 }
 
 
-export function toLocaleString(number) {
+export function toLocaleString(number, units=3) {
   return number.toLocaleString(undefined, {
       style: 'currency', 
       currency: 'USD',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
+      minimumFractionDigits: units,
+      maximumFractionDigits: units
   });
 }
 

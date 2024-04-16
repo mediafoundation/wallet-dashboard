@@ -37,7 +37,7 @@ const calculateInterest = ({transfers, balances}) => {
   }
   )
   //console.log("total", total)
-  return toLocaleString(Number(formatEther(interest)))
+  return toLocaleString(Number(formatEther(interest)),2)
 }
 
 
@@ -61,7 +61,7 @@ const Transfers = ({ transfers, token, balance }) => {
 
   return transfers.length > 0 ? (
     <div className="relative z-50 text-center text-sm font-mono ">
-      <span className="text-black/70 dark:text-white/70">EARNINGS:</span> {toLocaleString(Number(interest))}
+      <span className="text-black/70 dark:text-white/70">EARNINGS:</span> {toLocaleString(Number(interest),2)}
       <Modal
         title={`${token.name} Transactions`}
         content={
@@ -124,10 +124,10 @@ const Position = ({ balance, index, address, transfers }) => {
         </h2>
         <div className="text-center">
           <p className="text-2xl font-bold font-mono py-2">
-            {toLocaleString(Number(balance.formatted))}
+            {toLocaleString(Number(balance.formatted),0)}
           </p>
           <p className="text-sm font-mono py-2">
-            <span className="text-black/70 dark:text-white/70">TVL:</span> {toLocaleString(Number(balance.underlying.formatted))}
+            <span className="text-black/70 dark:text-white/70">TVL:</span> {toLocaleString(Number(balance.underlying.formatted),0)}
           </p>
         </div>
 
@@ -247,7 +247,7 @@ export default function Home() {
       if(_balances){
         setError(null)
         setBalances(_balances)
-        document.title = `${toLocaleString(_balances.reduce((acc, balance) => acc + Number(balance.formatted), 0))} | ${getAddress(address)}`
+        document.title = `${toLocaleString(_balances.reduce((acc, balance) => acc + Number(balance.formatted), 0),0)} | ${getAddress(address)}`
       } else {
         setError("Unknown error")
       }
@@ -348,7 +348,7 @@ export default function Home() {
             {loading ? <Loader className="w-6 h-6 sm:h-7 sm:w-7 ml-auto" /> : (
               <div className="flex gap-3 ml-auto text-base sm:text-lg">
                 <span className="font-semibold ml-auto">
-                  {toLocaleString(balances.reduce((acc, balance) => acc + Number(balance.formatted), 0))}
+                  {toLocaleString(balances.reduce((acc, balance) => acc + Number(balance.formatted), 0),0)}
                 </span>
                 {transfers.length > 0 && balances && (<> &middot; <span>{calculateInterest({transfers, balances})}</span></>)}
               </div>
