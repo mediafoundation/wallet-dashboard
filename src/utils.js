@@ -738,7 +738,7 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
         address: token.contract,
         abi: erc4626,
         functionName: "convertToAssets",
-        args: [[balances[i].balance]],
+        args: [[balances[i].value]],
       })
 
       const results = await publicClient.multicall({ contracts: erc4626_calls })
