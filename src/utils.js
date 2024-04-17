@@ -744,7 +744,9 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
       const results = await publicClient.multicall({ contracts: erc4626_calls })
 
       balances[i].underlying.value = results[0].result
+      balances[i].underlying.formatted = formatUnits(results[0].result, token.assetDecimals)
       balances[i].value = results[1].result
+      balances[i].formatted = formatUnits(results[1].result, token.assetDecimals)
     }
   })
   return balances
