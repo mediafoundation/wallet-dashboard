@@ -686,7 +686,7 @@ export const CogIcon = ({ className }) => (
 export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   let erc20_calls = []
 
-  tokens.map((token) => {
+  for(const token of tokens) {
     erc20_calls.push({
       address: token.contract,
       abi: erc20,
@@ -700,14 +700,14 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
       functionName: "balanceOf",
       args: [token.contract],
     })
-  })
+  }
 
   const results = await publicClient.multicall({ contracts: erc20_calls })
 
   let balances = []
   let i = 0
 
-  tokens.map((token) => {
+  for(const token of tokens) {
     balances.push({
       value: results[i].result,
       formatted: formatUnits(results[i].result, token.assetDecimals),
@@ -721,21 +721,21 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
       symbol: token.description,
     })
     i += 2
-  })
+  }
 
   let erc4626_calls = []
 
-  tokens.map(async (token, i) => {
-    if (token.type === "ERC4626") {
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].type === "ERC4626") {
       erc4626_calls.push({
-        address: token.contract,
+        address: tokens[i].contract,
         abi: erc4626,
         functionName: "totalAssets",
         args: [],
       })
 
       erc4626_calls.push({
-        address: token.contract,
+        address: tokens[i].contract,
         abi: erc4626,
         functionName: "convertToAssets",
         args: [[balances[i].value]],
@@ -744,10 +744,11 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
       const results = await publicClient.multicall({ contracts: erc4626_calls })
 
       balances[i].underlying.value = results[0].result
-      balances[i].underlying.formatted = formatUnits(results[0].result, token.assetDecimals)
+      balances[i].underlying.formatted = formatUnits(results[0].result, tokens[i].assetDecimals)
       balances[i].value = results[1].result
-      balances[i].formatted = formatUnits(results[1].result, token.assetDecimals)
+      balances[i].formatted = formatUnits(results[1].result, tokens[i].assetDecimals)
     }
-  })
+  }
+  
   return balances
 }
