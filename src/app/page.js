@@ -465,7 +465,6 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-
               <button
                 className="block w-full mt-8 text-center relative z-10"
                 onClick={() => {
@@ -474,14 +473,6 @@ export default function Home() {
                 }}
               >
                 Reload ({timer})
-              </button>
-              <button
-                className="block w-full mt-8 text-center relative z-10"
-                onClick={() => {
-                  multiBalanceCall({ publicClient, address, tokens })
-                }}
-              >
-                Multi Call
               </button>
             </>
           )}
