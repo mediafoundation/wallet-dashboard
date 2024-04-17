@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { http, createConfig } from "wagmi"
 import { getPublicClient } from "@wagmi/core"
 import { mainnet } from "wagmi/chains"
-import { isAddress, getAddress, formatUnits, formatEther } from "viem"
+import { isAddress, getAddress, formatUnits, formatEther, getContract } from "viem"
 import {
   Loader,
   tokens,
@@ -14,6 +14,7 @@ import {
   genesisBlock,
   getTransfers as _getTransfers,
   multiBalanceCall,
+  ExpandIcon,
 } from "../utils"
 import Modal from "../components/Modal"
 
@@ -56,7 +57,7 @@ const calculateInterest = ({ transfers, balances }) => {
   return toLocaleString(Number(formatEther(interest)), 2)
 }
 
-const Transfers = ({ transfers, token, balance }) => {
+const getTransfersData = ({ transfers, token, balance }) => { 
   const transfer_from = transfers.filter(
     (transfer) => transfer._from.toLowerCase() == token.contract.toLowerCase()
   )
@@ -81,10 +82,16 @@ const Transfers = ({ transfers, token, balance }) => {
     token.assetDecimals
   )
 
+  return { transfer_from, transfer_to, deposited, withdrawn, total, interest }
+
+}
+
+const Transfers = ({ transfers, token, balance }) => {
+
+  const { transfer_from, transfer_to } = getTransfersData({ transfers, token, balance });
+
   return transfers.length > 0 ? (
     <div className="relative z-50 text-center text-sm font-mono ">
-      <span className="text-black/70 dark:text-white/70">EARNINGS:</span>{" "}
-      {toLocaleString(Number(interest), 2)}
       <Modal
         title={`${token.name} Transactions`}
         content={
@@ -149,7 +156,7 @@ const Transfers = ({ transfers, token, balance }) => {
         ]}
       >
         <button className="text-sm text-black/70 dark:text-white/70 mt-4">
-          Show all txs
+          Show my txs
         </button>
       </Modal>
     </div>
@@ -158,14 +165,23 @@ const Transfers = ({ transfers, token, balance }) => {
   )
 }
 
-const Position = ({ balance, index, address, transfers }) => {
+const Position = ({ balance, index, address, transfers, compact }) => {
+
+  const { interest } = getTransfersData({ transfers, token: tokens[index], balance });
+
+  let link = "";
+  if(tokens[index].name === "DAI") {
+    link = `https://app.spark.fi/reserve-overview/?underlyingAsset=${tokens[index].asset.toLocaleLowerCase()}&marketName=proto_spark_v3`
+  } else {
+    link = `https://app.aave.com/reserve-overview/?underlyingAsset=${tokens[index].asset.toLocaleLowerCase()}&marketName=proto_mainnet_v3`
+  }
   return (
     <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl">
       <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-lg dark:bg-black/50 gap-2 relative">
         <h2 className="text-2xl font-bold ">
           <a
             className="flex gap-2 items-center"
-            href={`https://etherscan.io/token/${tokens[index].contract}?a=${address}`}
+            href={link}
             target="_blank"
           >
             <Image
@@ -178,21 +194,42 @@ const Position = ({ balance, index, address, transfers }) => {
             <span className="text-xs">({tokens[index].description})</span>
           </a>
         </h2>
-        <div className="text-center">
-          <p className="text-2xl font-bold font-mono py-2">
+        <div className="border-t dark:border-white/10  text-center font-mono w-full">
+          <a 
+            className="text-2xl font-bold py-2 block"
+            href={`https://etherscan.io/token/${tokens[index].contract}?a=${address}`}
+            target="_blank"
+          >
             {toLocaleString(Number(balance.formatted), 0)}
-          </p>
-          <p className="text-sm font-mono py-2">
-            <span className="text-black/70 dark:text-white/70">TVL:</span>{" "}
-            {toLocaleString(Number(balance.underlying.formatted), 0)}
+          </a>
+          <p>
+            <span className="text-black/70 dark:text-white/70">EARNINGS:</span>{" "}
+            {toLocaleString(Number(interest), 2)}
           </p>
         </div>
+        <div className={`border-t py-2 dark:border-white/10 text-center text-sm font-mono ${compact && "hidden"}`}>
+          <a 
+            target="_blank"
+            href={link} className=" py-2"
+          >
+            <span className="text-black/70 dark:text-white/70">TOTAL SUPPLIED:</span>{" "}
+            {toLocaleString(Number(balance.totalSupplyFormatted), 0)}
+          </a>
+          <p>
+            <span className="text-black/70 dark:text-white/70">TOTAL BORROWED:</span>{" "}
+            {toLocaleString(Number(formatUnits(balance.totalSupply - balance.underlying.value, tokens[index].assetDecimals)),0)}
+          </p>
+          <p>
+            <span className="text-black/70 dark:text-white/70">AVAILABLE:</span>{" "}
+            {toLocaleString(Number(balance.underlying.formatted), 0)}
+          </p>
 
         <Transfers
           transfers={transfers}
           token={tokens[index]}
           balance={balance}
         />
+        </div>
       </div>
     </div>
   )
@@ -206,10 +243,26 @@ export default function Home() {
   const [timer, setTimer] = useState(interval)
   const [rpc, setRpc] = useState("")
   const [transfers, setTransfers] = useState([])
+  const [compact, setCompact] = useState(false)
+
+
+  const toggleCompact = () => {
+    if(compact) {
+      setCompact(false);
+      localStorage.removeItem("compact")
+    } else {
+      setCompact(true);
+      localStorage.setItem("compact", true)
+    }
+    
+  }
 
   useEffect(() => {
     if (localStorage.getItem("address")) {
       setAddress(localStorage.getItem("address"))
+    }
+    if (localStorage.getItem("compact")) {
+      setCompact(true)
     }
     setRpc(
       localStorage.getItem("rpc")
@@ -420,6 +473,13 @@ export default function Home() {
               <CogIcon className="w-6 h-6 sm:h-7 sm:w-7" />
             </button>
           </Modal>
+
+          <button 
+            className="flex items-center gap-2"
+            onClick={toggleCompact}
+          >
+            <ExpandIcon className="w-6 h-6 sm:h-7 sm:w-7" />
+          </button>
           {loading ? (
             <Loader className="w-6 h-6 sm:h-7 sm:w-7 ml-auto" />
           ) : (
@@ -461,6 +521,7 @@ export default function Home() {
                       index={index}
                       address={address}
                       transfers={transfers}
+                      compact={compact}
                     />
                   </div>
                 ))}

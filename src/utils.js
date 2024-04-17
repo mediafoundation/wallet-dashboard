@@ -37,6 +37,8 @@ export const tokens = [
     description: "sDAI",
     logo: "/dai.svg",
     contract: "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
+    spToken: "0x4DEDf26112B3Ec8eC46e7E31EA5e123490B05B8B",
+    vdToken: "0xf705d2B7e92B3F38e6ae7afaDAA2fEE110fE5914", //varible debt token (borrowed)
     asset: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
     assetDecimals: 18,
     chainId: 1,
@@ -508,6 +510,20 @@ export const erc20 = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+    constant: true,
+  },
 ]
 
 export const getTransfers = async ({
@@ -683,10 +699,24 @@ export const CogIcon = ({ className }) => (
   </svg>
 )
 
+export const ExpandIcon = ({ className }) => (
+  <svg
+    className={className}
+    stroke="currentColor"
+    fill="currentColor"
+    strokeWidth="0"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path fill="none" d="M0 0h24v24H0V0z"></path>
+    <path d="M4 20h16v2H4zM4 2h16v2H4zM9.41 13.59 8 15l4 4 4-4-1.41-1.41L13 15.17V8.83l1.59 1.58L16 9l-4-4-4 4 1.41 1.41L11 8.83v6.34z"></path>
+  </svg>
+)
+
 export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   let erc20_calls = []
 
-  for(const token of tokens) {
+  for (const token of tokens) {
     erc20_calls.push({
       address: token.contract,
       abi: erc20,
@@ -700,6 +730,13 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
       functionName: "balanceOf",
       args: [token.contract],
     })
+
+    erc20_calls.push({
+      address: token.contract,
+      abi: erc20,
+      functionName: "totalSupply",
+      args: [],
+    })
   }
 
   const results = await publicClient.multicall({ contracts: erc20_calls })
@@ -707,8 +744,10 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   let balances = []
   let i = 0
 
-  for(const token of tokens) {
+  for (const token of tokens) {
     balances.push({
+      symbol: token.description,
+      decimals: token.assetDecimals,
       value: results[i].result,
       formatted: formatUnits(results[i].result, token.assetDecimals),
       underlying: {
@@ -717,10 +756,13 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
         value: results[i + 1].result,
         formatted: formatUnits(results[i + 1].result, token.assetDecimals),
       },
-      decimals: token.assetDecimals,
-      symbol: token.description,
+      totalSupply: results[i + 2].result,
+      totalSupplyFormatted: formatUnits(
+        results[i + 2].result,
+        token.assetDecimals
+      ),
     })
-    i += 2
+    i += 3
   }
 
   let erc4626_calls = []
@@ -730,25 +772,45 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
       erc4626_calls.push({
         address: tokens[i].contract,
         abi: erc4626,
-        functionName: "totalAssets",
-        args: [],
-      })
-
-      erc4626_calls.push({
-        address: tokens[i].contract,
-        abi: erc4626,
         functionName: "convertToAssets",
         args: [[balances[i].value]],
       })
 
+      erc4626_calls.push({
+        address: tokens[i].spToken,
+        abi: erc4626,
+        functionName: "totalSupply",
+        args: [],
+      })
+
+      erc4626_calls.push({
+        address: tokens[i].vdToken,
+        abi: erc4626,
+        functionName: "totalSupply",
+        args: [],
+      })
+
       const results = await publicClient.multicall({ contracts: erc4626_calls })
 
-      balances[i].underlying.value = results[0].result
-      balances[i].underlying.formatted = formatUnits(results[0].result, tokens[i].assetDecimals)
-      balances[i].value = results[1].result
-      balances[i].formatted = formatUnits(results[1].result, tokens[i].assetDecimals)
+      balances[i].value = results[0].result
+      balances[i].formatted = formatUnits(
+        balances[i].value,
+        tokens[i].assetDecimals
+      )
+
+      balances[i].totalSupply = results[1].result
+      balances[i].totalSupplyFormatted = formatUnits(
+        balances[i].totalSupply,
+        tokens[i].assetDecimals
+      )
+
+      balances[i].underlying.value = balances[i].totalSupply - results[2].result
+      balances[i].underlying.formatted = formatUnits(
+        balances[i].underlying.value,
+        tokens[i].assetDecimals
+      )
     }
   }
-  
+
   return balances
 }
