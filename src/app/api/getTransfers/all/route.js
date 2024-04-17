@@ -8,7 +8,7 @@ export async function GET(request) {
 
   try {
     const transactions =
-      await client.sql`SELECT * FROM Transactions WHERE _from = ${address} OR _to = ${address};`
+      await client.sql`SELECT * FROM Transactions WHERE _from = ${address} OR _to = ${address} ORDER BY blocknumber;`
     return NextResponse.json(transactions.rows)
   } catch (error) {
     return NextResponse.json({ error })

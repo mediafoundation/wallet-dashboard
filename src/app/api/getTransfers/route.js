@@ -58,7 +58,7 @@ export async function GET(request) {
         toBlock <= user.rows[0].lastblock
       ) {
         const transactions =
-          await client.sql`SELECT * FROM Transactions WHERE (_from = ${from} OR _to = ${from}) AND blocknumber >= ${fromBlock} AND blocknumber <= ${toBlock};`
+          await client.sql`SELECT * FROM Transactions WHERE (_from = ${from} OR _to = ${from}) AND blocknumber >= ${fromBlock} AND blocknumber <= ${toBlock} ORDER BY blocknumber;`
         return NextResponse.json(transactions.rows)
       }
     }
@@ -103,7 +103,7 @@ export async function GET(request) {
     }
 
     const transactions =
-      await client.sql`SELECT * FROM Transactions WHERE (_from = ${from} OR _to = ${from}) AND blocknumber >= ${fromBlock} AND blocknumber <= ${toBlock};`
+      await client.sql`SELECT * FROM Transactions WHERE (_from = ${from} OR _to = ${from}) AND blocknumber >= ${fromBlock} AND blocknumber <= ${toBlock} ORDER BY blocknumber;`
 
     return NextResponse.json(transactions.rows)
   } catch (error) {
