@@ -16,11 +16,15 @@ import {
 } from "../utils"
 import Modal from "../components/Modal"
 import Position from "../components/Position"
-import { RxReload } from "react-icons/rx"
+import { AiOutlineReload } from "react-icons/ai"
 import { RiBarChartBoxLine } from "react-icons/ri"
-import { PiGearFineDuotone } from "react-icons/pi"
+import {
+  PiGearFineDuotone,
+  PiPlayDuotone,
+  PiPauseDuotone,
+} from "react-icons/pi"
 import { BsArrowsExpand, BsArrowsCollapse } from "react-icons/bs"
-import DynamicDataTable from "@langleyfoxall/react-dynamic-data-table";
+import DynamicDataTable from "@langleyfoxall/react-dynamic-data-table"
 
 const interval = 30
 
@@ -64,19 +68,19 @@ const calculateInterest = ({ transfers, balances }) => {
 const Table = ({ rows }) => {
   if (!rows) return null
   // only take row.reserve of each row
-  let market = rows.map(row => row.reserve)
+  let market = rows.map((row) => row.reserve)
 
-  for(let i = 0; i < market.length; i++) {
+  for (let i = 0; i < market.length; i++) {
     market[i].userUnderlyingBalance = rows[i].underlyingBalance
   }
 
   return (
     <>
-      <DynamicDataTable 
+      <DynamicDataTable
         buttons={[]}
         className="table-fixed whitespace-nowrap text-left [&_td]:border-b [&_th]:border-b [&_th]:dark:border-white/25 [&_th]:pb-1  [&_td]:dark:border-white/10 [&_td]:pr-2 [&_th]:pr-3"
-        rows={market} 
-        fieldsToExclude={['id']}
+        rows={market}
+        fieldsToExclude={["id"]}
       />
     </>
   )
@@ -92,6 +96,8 @@ export default function Home() {
   const [transfers, setTransfers] = useState([])
   const [compact, setCompact] = useState(false)
   const [aaveData, setAaveData] = useState({})
+  const [hiddenPositions, setHiddenPositions] = useState([])
+  const [stop, setStop] = useState(false)
 
   const toggleCompact = () => {
     if (compact) {
@@ -102,6 +108,16 @@ export default function Home() {
       localStorage.setItem("compact", true)
     }
   }
+  const toggleHiddenPosition = (index) => {
+    let newPositions
+    if (hiddenPositions.includes(index)) {
+      newPositions = hiddenPositions.filter((i) => i !== index)
+    } else {
+      newPositions = [...hiddenPositions, index]
+    }
+    setHiddenPositions(newPositions)
+    localStorage.setItem("hiddenPositions", JSON.stringify(newPositions))
+  }
 
   useEffect(() => {
     if (localStorage.getItem("address")) {
@@ -109,6 +125,13 @@ export default function Home() {
     }
     if (localStorage.getItem("compact")) {
       setCompact(true)
+    }
+    if (localStorage.getItem("hiddenPositions")) {
+      try {
+        setHiddenPositions(JSON.parse(localStorage.getItem("hiddenPositions")))
+      } catch (_) {
+        localStorage.removeItem("hiddenPositions")
+      }
     }
     setRpc(
       localStorage.getItem("rpc")
@@ -173,47 +196,46 @@ export default function Home() {
 
   const getAaveData = async () => {
     const _aaveData = await fetchMarketData({ user: address, rpc })
-    console.log(_aaveData)
     setAaveData(_aaveData)
   }
 
+  const loadData = async () => {
+    scanTransfers({ address, publicClient, rpc })
+    getBalances()
+    getTransfers()
+    getAaveData()
+    setTimer(interval)
+  }
+
   useEffect(() => {
-    if (address) {
+    if (address && rpc && !stop) {
       try {
         if (!isAddress(getAddress(address))) {
           setError(`Invalid address ${address}`)
           return
         }
-        scanTransfers({ address, publicClient, rpc })
-        getBalances()
-        getTransfers()
-        getAaveData()
+        loadData()
 
         const countdown = setInterval(() => {
           setTimer((prevTimer) => (prevTimer > 0 ? prevTimer - 1 : interval))
         }, 1000)
-
         return () => clearInterval(countdown)
       } catch (e) {
         setError(`Invalid address ${address}`)
       }
     }
-  }, [address, rpc])
+  }, [address, rpc, stop])
 
   useEffect(() => {
     if (timer === 0) {
-      getBalances()
-      getTransfers()
-      getAaveData()
-      setTimer(interval)
+      loadData()
     }
   }, [timer])
-
 
   return (
     <main className="p-4 lg:p-24 relative">
       <div className="z-10 max-w-3xl text-lg mx-auto mb-4">
-        <div className="bg-gradient-to-b from-zinc-200 px-5 py-4 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit w-auto  rounded-xl border bg-gray-200 flex leading-none items-center">
+        <div className="bg-gradient-to-b from-zinc-200 p-1 pr-4 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit w-auto  rounded-xl border bg-gray-200 flex leading-none items-center">
           <Modal
             title={"Settings"}
             content={
@@ -238,18 +260,29 @@ export default function Home() {
                   }
                   placeholder="Enter your wallet address"
                 />
+                <h3 className="mt-6  font-medium text-lg border-b pb-4 dark:border-white/10">
+                  Show/Hide Positions
+                </h3>
+                {tokens.map((token, index) => (
+                  <div key={index} className="mt-4">
+                    <label>
+                      <input
+                        className="mr-2"
+                        type="checkbox"
+                        id={token.name}
+                        name={token.name}
+                        defaultChecked={!hiddenPositions.includes(index)}
+                        checked={!hiddenPositions.includes(index)}
+                        onChange={() => toggleHiddenPosition(index)}
+                      />
+                      {token.description}
+                    </label>
+                  </div>
+                ))}
               </>
             }
             onConfirm={() => console.log("Button confirm")}
-            onDiscard={() => console.log("Button discard")}
             buttons={[
-              {
-                role: "discard",
-                toClose: true,
-                classes:
-                  "bg-zinc-500/20 px-4 py-2 rounded-lg hover:bg-zinc-500/30 transition-all duration-200",
-                label: "Discard",
-              },
               {
                 role: "confirm",
                 toClose: true,
@@ -259,13 +292,13 @@ export default function Home() {
               },
             ]}
           >
-            <button className="flex items-center gap-2">
+            <button>
               <PiGearFineDuotone className="w-6 h-6 sm:h-7 sm:w-7" />
             </button>
           </Modal>
 
           <button
-            className="flex items-center gap-2 ml-3"
+            className="p-2.5"
             onClick={toggleCompact}
           >
             {compact ? (
@@ -305,54 +338,74 @@ export default function Home() {
           ) : (
             <div className="text-center">
               <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                {balances.map((balance, index) => (
-                  /* balance.value > 0 && */ <div
-                    key={index}
-                    className="w-full"
-                  >
-                    <Position
-                      balance={balance}
-                      index={index}
-                      address={address}
-                      transfers={transfers}
-                      compact={compact}
-                      aaveData={aaveData}
-                    />
-                  </div>
-                ))}
-              </div>
-              <button
-                className="mt-8 text-center relative z-10"
-                onClick={() => {
-                  getBalances()
-                  getTransfers()
-                }}
-              >
-                <span className="flex items-center gap-2">
-                  <RxReload className="inline" /> Reload ({timer})
-                </span>
-              </button>
-              <Modal
-                title={"AAVE Data"}
-                width="max-h-[100vh]"
-                content={
-                  <>
-                    <div className="max-w-fit h-[100%] overflow-auto">
-                      {aaveData &&
-                        aaveData.userReservesData &&
-                          <Table rows={aaveData.userReservesData} />
-                      }
+                {balances.map((balance, index) =>
+                  hiddenPositions.includes(index) ? null : (
+                    <div key={index} className="w-full">
+                      <Position
+                        balance={balance}
+                        index={index}
+                        address={address}
+                        transfers={transfers}
+                        compact={compact}
+                        aaveData={aaveData}
+                      />
                     </div>
-                  </>
-                }
-                buttons={[]}
-              >
-                <button className="mt-8 text-center relative z-10">
-                  <span className="flex items-center gap-2">
-                    <RiBarChartBoxLine className="inline" /> AAVE Data
-                  </span>
-                </button>
-              </Modal>
+                  )
+                )}
+              </div>
+              <div className="mt-8 px-4 flex justify-between max-w-3xl mx-auto">
+                <div>
+                  <button
+                    className="text-center relative z-10 p-2.5"
+                    onClick={() => setStop(!stop)}
+                  >
+                    <span className="flex items-center gap-2">
+                      {stop ? (
+                        <PiPlayDuotone className="text-xl inline" /> 
+                      ) : (
+                        <PiPauseDuotone className="text-xl inline" />
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    className="text-center relative z-10"
+                    onClick={() => loadData()}
+                  >
+                    <span className="flex items-center gap-2">
+                      <AiOutlineReload className="text-xl inline" /> 
+                      {stop ? (
+                        "Paused"
+                      ) : (
+                        <>Reloading in {timer}s</>
+                      )}
+                    </span>
+                  </button>
+                </div>
+                <div>
+                <Modal
+                  title={"AAVE Data"}
+                  width="max-h-[100vh]"
+                  content={
+                    <>
+                      <div className="max-w-fit h-[100%] overflow-auto">
+                        {aaveData && aaveData.userReservesData && (
+                          <Table rows={aaveData.userReservesData} />
+                        )}
+                      </div>
+                    </>
+                  }
+                  buttons={[]}
+                >
+                  <button className="text-center relative z-10">
+                    <span className="flex items-center gap-2">
+                      <RiBarChartBoxLine className="inline" /> AAVE Data
+                    </span>
+                  </button>
+                </Modal>
+                </div>
+              </div>
+
+
             </div>
           )}
         </div>

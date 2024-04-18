@@ -612,7 +612,6 @@ export const fetchBalances = async ({
         }
       })
     )
-    console.log(balances)
     return balances
   } catch (error) {
     console.log(error)
@@ -911,9 +910,9 @@ export const getTransfersData = ({ transfers, token, balance }) => {
 
 }
 
-export const scanTransfers = async ({address, publicClient, rpc}) => {
+export const scanTransfers = async ({address, publicClient, rpc, maxBlocks = 800}) => {
   if (!address) return
-
+  maxBlocks = maxBlocks - 1;
   const fetchAndLogTransfers = async (startBlock, endBlock) => {
     console.log(`Fetching transfers from block ${startBlock} to ${endBlock}`)
     let txs = await fetch(
@@ -944,7 +943,7 @@ export const scanTransfers = async ({address, publicClient, rpc}) => {
     startBlock = Number(userData.lastblock) + 1
 
     while (startBlock <= endBlock) {
-      let nextEndBlock = Math.min(startBlock + 9999, endBlock) // Calculate the next block to end this batch
+      let nextEndBlock = Math.min(startBlock + maxBlocks, endBlock) // Calculate the next block to end this batch
       await fetchAndLogTransfers(startBlock, nextEndBlock)
       startBlock = nextEndBlock + 1 // Prepare the start of the next batch
     }
@@ -953,24 +952,24 @@ export const scanTransfers = async ({address, publicClient, rpc}) => {
   // Second, scan from just below the first scanned block down to the genesis block, handling in batches if needed
   if (userData && userData.firstblock) {
     endBlock = Number(userData.firstblock) - 1
-    startBlock = Math.max(genesisBlock, endBlock - 9999)
+    startBlock = Math.max(genesisBlock, endBlock - maxBlocks)
 
     while (startBlock > genesisBlock) {
       await fetchAndLogTransfers(startBlock, endBlock)
       endBlock = startBlock - 1
-      startBlock = Math.max(genesisBlock, endBlock - 9999)
+      startBlock = Math.max(genesisBlock, endBlock - maxBlocks)
     }
   }
 
   // If there are no user data regarding firstblock and lastblock, scan everything from the current block to the genesis block in batches
   if (!(userData && (userData.firstblock || userData.lastblock))) {
     endBlock = blockNumber
-    startBlock = Math.max(genesisBlock, endBlock - 9999)
+    startBlock = Math.max(genesisBlock, endBlock - maxBlocks)
 
     while (startBlock >= genesisBlock) {
       await fetchAndLogTransfers(startBlock, endBlock)
       endBlock = startBlock - 1
-      startBlock = Math.max(genesisBlock, endBlock - 9999)
+      startBlock = Math.max(genesisBlock, endBlock - maxBlocks)
     }
   }
 }

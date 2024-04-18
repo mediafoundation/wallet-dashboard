@@ -12,7 +12,8 @@ export default function Modal({
     onDiscard = "",
     onConfirm = "",
     width = "sm:w-[40rem]",
-    children
+    children,
+    className = "inline"
 }) {
     let [ isOpen, setIsOpen ] = useState(false);
 
@@ -31,7 +32,7 @@ export default function Modal({
 
     return (
       <>
-        <div onClick={() => HandleChange()}>
+        <div className={className} onClick={() => HandleChange()}>
             {children}
         </div>
         {isOpen && createPortal(

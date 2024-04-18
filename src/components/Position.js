@@ -29,10 +29,10 @@ export const Position = ({
       (data) =>
         data.underlyingAsset.toLowerCase() === tokens[index].asset.toLowerCase()
     )
-    APY = `(${(Number(asset.reserve.supplyAPY) * 100 || 0).toFixed(2)}% APY)`
+    APY = `${(Number(asset.reserve.supplyAPY) * 100 || 0).toFixed(2)}% APY`
   }
   if (tokens[index].description == "sDAI") {
-    APY = `(13% APY)`
+    APY = `13% APY`
   }
 
   let link = ""
@@ -73,12 +73,11 @@ export const Position = ({
             <PiChartLineUpDuotone className="inline text-xl" />{" "}
             <span className="font-bold text-green-600 dark:text-green-500">
               {toLocaleString(Number(interest), 2)}
-            </span>{" "}
-            {APY}
+            </span> &middot; {APY}
           </p>
         </div>
         <div
-          className={`border-t py-2 dark:border-white/10 text-center text-sm font-mono ${
+          className={`w-full border-t py-2 dark:border-white/10 text-center text-sm font-mono ${
             compact && "hidden"
           }`}
         >

@@ -7,8 +7,8 @@ export const Transfers = ({ transfers, token, balance }) => {
 
   const { transfer_from, transfer_to } = getTransfersData({ transfers, token, balance });
 
-  return transfers.length > 0 ? (
-    <div className="relative z-50 text-center text-sm font-mono ">
+  return (
+    <div className="z-50 text-center text-sm font-mono mt-2 mb-6">
       <Modal
         title={`${token.name} Transactions`}
         content={
@@ -72,13 +72,13 @@ export const Transfers = ({ transfers, token, balance }) => {
           },
         ]}
       >
-        <button className="text-sm text-black/70 dark:text-white/70 mt-4">
-          Show my txs
-        </button>
+        <div className="absolute text-sm text-black/70 dark:text-white/70 right-0 left-0 text-center">
+          <button >
+            Show my txs
+          </button>
+        </div>
       </Modal>
     </div>
-  ) : (
-    <Loader className="w-6 h-6" />
   )
 }
 export default Transfers
