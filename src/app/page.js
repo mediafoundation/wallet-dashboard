@@ -20,6 +20,7 @@ import { RxReload } from "react-icons/rx"
 import { RiBarChartBoxLine } from "react-icons/ri"
 import { PiGearFineDuotone } from "react-icons/pi"
 import { BsArrowsExpand, BsArrowsCollapse } from "react-icons/bs"
+import DynamicDataTable from "@langleyfoxall/react-dynamic-data-table";
 
 const interval = 30
 
@@ -58,6 +59,27 @@ const calculateInterest = ({ transfers, balances }) => {
     interest += _interest
   })
   return toLocaleString(Number(formatEther(interest)), 2)
+}
+
+const Table = ({ rows }) => {
+  if (!rows) return null
+  // only take row.reserve of each row
+  let market = rows.map(row => row.reserve)
+
+  for(let i = 0; i < market.length; i++) {
+    market[i].userUnderlyingBalance = rows[i].underlyingBalance
+  }
+
+  return (
+    <>
+      <DynamicDataTable 
+        buttons={[]}
+        className="table-fixed whitespace-nowrap text-left [&_td]:border-b [&_th]:border-b [&_th]:dark:border-white/25 [&_th]:pb-1  [&_td]:dark:border-white/10 [&_td]:pr-2 [&_th]:pr-3"
+        rows={market} 
+        fieldsToExclude={['id']}
+      />
+    </>
+  )
 }
 
 export default function Home() {
@@ -151,6 +173,7 @@ export default function Home() {
 
   const getAaveData = async () => {
     const _aaveData = await fetchMarketData({ user: address, rpc })
+    console.log(_aaveData)
     setAaveData(_aaveData)
   }
 
@@ -185,6 +208,7 @@ export default function Home() {
       setTimer(interval)
     }
   }, [timer])
+
 
   return (
     <main className="p-4 lg:p-24 relative">
@@ -310,25 +334,18 @@ export default function Home() {
               </button>
               <Modal
                 title={"AAVE Data"}
+                width="max-h-[100vh]"
                 content={
                   <>
-                    <div className="max-w-[38rem] max-h-[38rem] overflow-scroll">
+                    <div className="max-w-fit h-[100%] overflow-auto">
                       {aaveData &&
                         aaveData.userReservesData &&
-                        JSON.stringify(aaveData.userReservesData)}
+                          <Table rows={aaveData.userReservesData} />
+                      }
                     </div>
                   </>
                 }
-                onDiscard={() => console.log("Button discard")}
-                buttons={[
-                  {
-                    role: "discard",
-                    toClose: true,
-                    classes:
-                      "bg-zinc-500/20 px-4 py-2 rounded-lg hover:bg-zinc-500/30 transition-all duration-200",
-                    label: "Close",
-                  },
-                ]}
+                buttons={[]}
               >
                 <button className="mt-8 text-center relative z-10">
                   <span className="flex items-center gap-2">

@@ -11,6 +11,7 @@ export default function Modal({
     classes = "",
     onDiscard = "",
     onConfirm = "",
+    width = "sm:w-[40rem]",
     children
 }) {
     let [ isOpen, setIsOpen ] = useState(false);
@@ -36,7 +37,7 @@ export default function Modal({
         {isOpen && createPortal(
           <div className="z-50 w-full h-full left-0 top-0 bg-black/75 fixed flex justify-center items-center">
             <div onClick={() => HandleChange()} className="w-full h-full left-0 top-0 fixed" />
-            <div className="relative z-[100] w-full sm:w-[40rem] px-4">
+            <div className={`relative z-[100] w-full ${width} px-4`}>
               <div className={`${classes ? classes : 'p-4 bg-white dark:bg-black border dark:border-white/10 rounded-lg'}`}>
                 <div className="w-full flex justify-between items-center pb-4 mb-6 border-b dark:border-white/10">
                     <p className="font-medium text-lg">{title}</p>
@@ -48,30 +49,32 @@ export default function Modal({
                     </div>
                 </div>
                 <div>{content}</div>
-                <div className="mt-6 flex justify-end items-center gap-2">
-                    {buttons.map((button, index) => (
-                        <button 
-                            onClick={() => {
-                                if(button.role === "discard") {
-                                    onDiscard();
-                                }
-                                if(button.role === "confirm") {
-                                    onConfirm();
-                                }
-                                if(button.role === "custom") {
-                                    button.onClick();
-                                }
-                                if(button.toClose) {
-                                    setIsOpen(false);
-                                }
-                            }}
-                            key={index} 
-                            className={button.classes}
-                        >
-                            {button.label}
-                        </button>
-                    ))}
-                </div>
+                {buttons.length > 0 && (
+                  <div className="mt-6 flex justify-end items-center gap-2">
+                      {buttons.map((button, index) => (
+                          <button 
+                              onClick={() => {
+                                  if(button.role === "discard") {
+                                      onDiscard();
+                                  }
+                                  if(button.role === "confirm") {
+                                      onConfirm();
+                                  }
+                                  if(button.role === "custom") {
+                                      button.onClick();
+                                  }
+                                  if(button.toClose) {
+                                      setIsOpen(false);
+                                  }
+                              }}
+                              key={index} 
+                              className={button.classes}
+                          >
+                              {button.label}
+                          </button>
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
