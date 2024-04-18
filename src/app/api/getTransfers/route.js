@@ -2,7 +2,7 @@ import { db } from "@vercel/postgres"
 import { http, createConfig } from "wagmi"
 import { getPublicClient } from "@wagmi/core"
 import { mainnet } from "wagmi/chains"
-import { getTransfers, tokens, genesisBlock } from "../../../utils"
+import { getTransfers, tokens } from "../../../utils"
 
 import { NextResponse } from "next/server"
 

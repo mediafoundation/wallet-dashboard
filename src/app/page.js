@@ -1,22 +1,25 @@
 "use client"
 
-import Image from "next/image"
 import { useEffect, useState } from "react"
 import { http, createConfig } from "wagmi"
 import { getPublicClient } from "@wagmi/core"
 import { mainnet } from "wagmi/chains"
-import { isAddress, getAddress, formatUnits, formatEther, getContract } from "viem"
+import { isAddress, getAddress, formatEther } from "viem"
 import {
   Loader,
   tokens,
   toLocaleString,
-  CogIcon,
-  genesisBlock,
+  scanTransfers,
   getTransfers as _getTransfers,
   multiBalanceCall,
-  ExpandIcon,
+  fetchMarketData,
 } from "../utils"
 import Modal from "../components/Modal"
+import Position from "../components/Position"
+import { RxReload } from "react-icons/rx"
+import { RiBarChartBoxLine } from "react-icons/ri"
+import { PiGearFineDuotone } from "react-icons/pi"
+import { BsArrowsExpand, BsArrowsCollapse } from "react-icons/bs"
 
 const interval = 30
 
@@ -57,184 +60,6 @@ const calculateInterest = ({ transfers, balances }) => {
   return toLocaleString(Number(formatEther(interest)), 2)
 }
 
-const getTransfersData = ({ transfers, token, balance }) => { 
-  const transfer_from = transfers.filter(
-    (transfer) => transfer._from.toLowerCase() == token.contract.toLowerCase()
-  )
-  const transfer_to = transfers.filter(
-    (transfer) => transfer._to.toLowerCase() == token.contract.toLowerCase()
-  )
-
-  const deposited = transfer_to.reduce(
-    (acc, transfer) => acc + BigInt(transfer._value),
-    0n
-  )
-
-  const withdrawn = transfer_from.reduce(
-    (acc, transfer) => acc + BigInt(transfer._value),
-    0n
-  )
-
-  const total = deposited - withdrawn
-
-  const interest = formatUnits(
-    BigInt(balance.value) - total,
-    token.assetDecimals
-  )
-
-  return { transfer_from, transfer_to, deposited, withdrawn, total, interest }
-
-}
-
-const Transfers = ({ transfers, token, balance }) => {
-
-  const { transfer_from, transfer_to } = getTransfersData({ transfers, token, balance });
-
-  return transfers.length > 0 ? (
-    <div className="relative z-50 text-center text-sm font-mono ">
-      <Modal
-        title={`${token.name} Transactions`}
-        content={
-          <>
-            <div className="text-lg">Deposit transactions</div>
-            {transfer_to.map((transfer, index) => (
-              <div
-                key={index}
-                className="flex gap-4 text-black/80 dark:text-white/80"
-              >
-                <div className="flex gap-2">
-                  <span>Amount:</span>
-                  <a
-                    href={`https://etherscan.io/tx/${transfer.transactionhash}`}
-                    target="_blank"
-                  >
-                    {formatUnits(BigInt(transfer._value), token.assetDecimals)}
-                  </a>
-                </div>
-              </div>
-            ))}
-            {transfer_to.length == 0 && (
-              <div className="dark:text-white/80 ">
-                No deposit transactions found
-              </div>
-            )}
-            <div className="text-lg border-t dark:border-white/10 mt-6 pt-6">
-              Withdraw transactions
-            </div>
-            {transfer_from.map((transfer, index) => (
-              <div
-                key={index}
-                className="flex gap-4 text-black/80 dark:text-white/80"
-              >
-                <div className="flex gap-2">
-                  <span>Amount:</span>
-                  <a
-                    href={`https://etherscan.io/tx/${transfer.transactionhash}`}
-                    target="_blank"
-                  >
-                    {formatUnits(BigInt(transfer._value), token.assetDecimals)}
-                  </a>
-                </div>
-              </div>
-            ))}
-            {transfer_from.length == 0 && (
-              <div className="dark:text-white/80 ">
-                No withdraw transactions found
-              </div>
-            )}
-          </>
-        }
-        onDiscard={() => console.log("Button discard")}
-        buttons={[
-          {
-            role: "discard",
-            toClose: true,
-            classes:
-              "bg-zinc-500/20 px-4 py-2 rounded-lg hover:bg-zinc-500/30 transition-all duration-200",
-            label: "Discard",
-          },
-        ]}
-      >
-        <button className="text-sm text-black/70 dark:text-white/70 mt-4">
-          Show my txs
-        </button>
-      </Modal>
-    </div>
-  ) : (
-    <Loader className="w-6 h-6" />
-  )
-}
-
-const Position = ({ balance, index, address, transfers, compact }) => {
-
-  const { interest } = getTransfersData({ transfers, token: tokens[index], balance });
-
-  let link = "";
-  if(tokens[index].name === "DAI") {
-    link = `https://app.spark.fi/reserve-overview/?underlyingAsset=${tokens[index].asset.toLocaleLowerCase()}&marketName=proto_spark_v3`
-  } else {
-    link = `https://app.aave.com/reserve-overview/?underlyingAsset=${tokens[index].asset.toLocaleLowerCase()}&marketName=proto_mainnet_v3`
-  }
-  return (
-    <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl">
-      <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-lg dark:bg-black/50 gap-2 relative">
-        <h2 className="text-2xl font-bold ">
-          <a
-            className="flex gap-2 items-center"
-            href={link}
-            target="_blank"
-          >
-            <Image
-              src={tokens[index].logo}
-              alt={tokens[index].name}
-              width={32}
-              height={32}
-            />
-            <span>{tokens[index].name}</span>
-            <span className="text-xs">({tokens[index].description})</span>
-          </a>
-        </h2>
-        <div className="border-t dark:border-white/10  text-center font-mono w-full">
-          <a 
-            className="text-2xl font-bold py-2 block"
-            href={`https://etherscan.io/token/${tokens[index].contract}?a=${address}`}
-            target="_blank"
-          >
-            {toLocaleString(Number(balance.formatted), 0)}
-          </a>
-          <p>
-            <span className="text-black/70 dark:text-white/70">EARNINGS:</span>{" "}
-            {toLocaleString(Number(interest), 2)}
-          </p>
-        </div>
-        <div className={`border-t py-2 dark:border-white/10 text-center text-sm font-mono ${compact && "hidden"}`}>
-          <a 
-            target="_blank"
-            href={link} className=" py-2"
-          >
-            <span className="text-black/70 dark:text-white/70">TOTAL SUPPLIED:</span>{" "}
-            {toLocaleString(Number(balance.totalSupplyFormatted), 0)}
-          </a>
-          <p>
-            <span className="text-black/70 dark:text-white/70">TOTAL BORROWED:</span>{" "}
-            {toLocaleString(Number(formatUnits(balance.totalSupply - balance.underlying.value, tokens[index].assetDecimals)),0)}
-          </p>
-          <p>
-            <span className="text-black/70 dark:text-white/70">AVAILABLE:</span>{" "}
-            {toLocaleString(Number(balance.underlying.formatted), 0)}
-          </p>
-
-        <Transfers
-          transfers={transfers}
-          token={tokens[index]}
-          balance={balance}
-        />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function Home() {
   const [balances, setBalances] = useState([])
   const [loading, setLoading] = useState(false)
@@ -244,17 +69,16 @@ export default function Home() {
   const [rpc, setRpc] = useState("")
   const [transfers, setTransfers] = useState([])
   const [compact, setCompact] = useState(false)
-
+  const [aaveData, setAaveData] = useState({})
 
   const toggleCompact = () => {
-    if(compact) {
-      setCompact(false);
+    if (compact) {
+      setCompact(false)
       localStorage.removeItem("compact")
     } else {
-      setCompact(true);
+      setCompact(true)
       localStorage.setItem("compact", true)
     }
-    
   }
 
   useEffect(() => {
@@ -285,71 +109,6 @@ export default function Home() {
     let res = await fetch(`/api/getTransfers/all?address=${address}`)
     let data = await res.json()
     setTransfers(data)
-  }
-
-  const scanTransfers = async () => {
-    if (!address) return
-
-    // Fetch user data to determine previously scanned blocks
-    let res = await fetch(`/api/user?address=${address}`)
-    let userData = await res.json()
-
-    // Get the current block number from the public client
-    let blockNumber = await publicClient.getBlockNumber()
-    blockNumber = Number(blockNumber)
-
-    console.log("Genesis Block (sDAI deploy block)", genesisBlock)
-    console.log("Current Block", blockNumber)
-
-    // Variables for the start and end of the block range to scan
-    let startBlock, endBlock
-
-    // First, scan from the last scanned block up to the current block, handling in batches if necessary
-    if (userData && userData.lastblock) {
-      endBlock = blockNumber
-      startBlock = Number(userData.lastblock) + 1
-
-      while (startBlock <= endBlock) {
-        let nextEndBlock = Math.min(startBlock + 9999, endBlock) // Calculate the next block to end this batch
-        await fetchAndLogTransfers(startBlock, nextEndBlock)
-        startBlock = nextEndBlock + 1 // Prepare the start of the next batch
-      }
-    }
-
-    // Second, scan from just below the first scanned block down to the genesis block, handling in batches if needed
-    if (userData && userData.firstblock) {
-      endBlock = Number(userData.firstblock) - 1
-      startBlock = Math.max(genesisBlock, endBlock - 9999)
-
-      while (startBlock > genesisBlock) {
-        await fetchAndLogTransfers(startBlock, endBlock)
-        endBlock = startBlock - 1
-        startBlock = Math.max(genesisBlock, endBlock - 9999)
-      }
-    }
-
-    // If there are no user data regarding firstblock and lastblock, scan everything from the current block to the genesis block in batches
-    if (!(userData && (userData.firstblock || userData.lastblock))) {
-      endBlock = blockNumber
-      startBlock = Math.max(genesisBlock, endBlock - 9999)
-
-      while (startBlock >= genesisBlock) {
-        await fetchAndLogTransfers(startBlock, endBlock)
-        endBlock = startBlock - 1
-        startBlock = Math.max(genesisBlock, endBlock - 9999)
-      }
-    }
-  }
-
-  async function fetchAndLogTransfers(startBlock, endBlock) {
-    console.log(`Fetching transfers from block ${startBlock} to ${endBlock}`)
-    let txs = await fetch(
-      `/api/getTransfers?from=${address}&rpc=${rpc}&fromBlock=${startBlock}&toBlock=${endBlock}`
-    )
-    let _data = await txs.json()
-    console.log(_data)
-    // Sleep between API calls to reduce load
-    await new Promise((resolve) => setTimeout(resolve, 5000))
   }
 
   const getBalances = async () => {
@@ -390,6 +149,11 @@ export default function Home() {
     localStorage.setItem("rpc", url)
   }
 
+  const getAaveData = async () => {
+    const _aaveData = await fetchMarketData({ user: address, rpc })
+    setAaveData(_aaveData)
+  }
+
   useEffect(() => {
     if (address) {
       try {
@@ -397,9 +161,10 @@ export default function Home() {
           setError(`Invalid address ${address}`)
           return
         }
-        scanTransfers()
+        scanTransfers({ address, publicClient, rpc })
         getBalances()
         getTransfers()
+        getAaveData()
 
         const countdown = setInterval(() => {
           setTimer((prevTimer) => (prevTimer > 0 ? prevTimer - 1 : interval))
@@ -416,6 +181,7 @@ export default function Home() {
     if (timer === 0) {
       getBalances()
       getTransfers()
+      getAaveData()
       setTimer(interval)
     }
   }, [timer])
@@ -470,18 +236,22 @@ export default function Home() {
             ]}
           >
             <button className="flex items-center gap-2">
-              <CogIcon className="w-6 h-6 sm:h-7 sm:w-7" />
+              <PiGearFineDuotone className="w-6 h-6 sm:h-7 sm:w-7" />
             </button>
           </Modal>
 
-          <button 
-            className="flex items-center gap-2"
+          <button
+            className="flex items-center gap-2 ml-3"
             onClick={toggleCompact}
           >
-            <ExpandIcon className="w-6 h-6 sm:h-7 sm:w-7" />
+            {compact ? (
+              <BsArrowsExpand className="w-5 h-5 sm:h-6 sm:w-6" />
+            ) : (
+              <BsArrowsCollapse className="w-5 h-5 sm:h-6 sm:w-6" />
+            )}
           </button>
           {loading ? (
-            <Loader className="w-6 h-6 sm:h-7 sm:w-7 ml-auto" />
+            <Loader className="w-5 h-5 sm:h-6 sm:w-6 ml-auto" />
           ) : (
             <div className="flex gap-3 ml-auto text-base sm:text-lg">
               <span className="font-semibold ml-auto">
@@ -509,7 +279,7 @@ export default function Home() {
           {error ? (
             <p className="text-red-500 text-center max-w-2xl">{error}</p>
           ) : (
-            <>
+            <div className="text-center">
               <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
                 {balances.map((balance, index) => (
                   /* balance.value > 0 && */ <div
@@ -522,20 +292,51 @@ export default function Home() {
                       address={address}
                       transfers={transfers}
                       compact={compact}
+                      aaveData={aaveData}
                     />
                   </div>
                 ))}
               </div>
               <button
-                className="block w-full mt-8 text-center relative z-10"
+                className="mt-8 text-center relative z-10"
                 onClick={() => {
                   getBalances()
                   getTransfers()
                 }}
               >
-                Reload ({timer})
+                <span className="flex items-center gap-2">
+                  <RxReload className="inline" /> Reload ({timer})
+                </span>
               </button>
-            </>
+              <Modal
+                title={"AAVE Data"}
+                content={
+                  <>
+                    <div className="max-w-[38rem] max-h-[38rem] overflow-scroll">
+                      {aaveData &&
+                        aaveData.userReservesData &&
+                        JSON.stringify(aaveData.userReservesData)}
+                    </div>
+                  </>
+                }
+                onDiscard={() => console.log("Button discard")}
+                buttons={[
+                  {
+                    role: "discard",
+                    toClose: true,
+                    classes:
+                      "bg-zinc-500/20 px-4 py-2 rounded-lg hover:bg-zinc-500/30 transition-all duration-200",
+                    label: "Close",
+                  },
+                ]}
+              >
+                <button className="mt-8 text-center relative z-10">
+                  <span className="flex items-center gap-2">
+                    <RiBarChartBoxLine className="inline" /> AAVE Data
+                  </span>
+                </button>
+              </Modal>
+            </div>
           )}
         </div>
       )}

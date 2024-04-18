@@ -4,8 +4,20 @@ import {
   formatUnits,
   getContract,
   getAddress,
+  isAddress,
   parseAbiItem,
 } from "viem"
+
+import { ethers } from "ethers"
+import { UiPoolDataProvider, ChainId } from "@aave/contract-helpers"
+import { AaveV3Ethereum } from "@bgd-labs/aave-address-book"
+import { formatReserves, formatUserSummary } from "@aave/math-utils"
+import dayjs from "dayjs"
+
+const {
+  UI_POOL_DATA_PROVIDER: uiPoolDataProviderAddress,
+  POOL_ADDRESSES_PROVIDER: lendingPoolAddressProvider,
+} = AaveV3Ethereum
 
 export const genesisBlock = 16428133
 
@@ -813,4 +825,152 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   }
 
   return balances
+}
+
+export const fetchMarketData = async ({ user, rpc }) => {
+
+  const provider = new ethers.providers.JsonRpcProvider({
+    url: rpc,
+    skipFetchSetup: true,
+  })
+
+  const poolDataProviderContract = new UiPoolDataProvider({
+    uiPoolDataProviderAddress,
+    provider,
+    chainId: ChainId.mainnet,
+  })
+
+  const reserves = await poolDataProviderContract.getReservesHumanized({
+    lendingPoolAddressProvider,
+  })
+
+  const reservesArray = reserves.reservesData
+  const { marketReferenceCurrencyPriceInUsd, marketReferenceCurrencyDecimals } =
+    reserves.baseCurrencyData
+
+  const currentTimestamp = dayjs().unix()
+
+  let formattedReserves = formatReserves({
+    reserves: reservesArray,
+    currentTimestamp,
+    marketReferenceCurrencyDecimals,
+    marketReferencePriceInUsd: marketReferenceCurrencyPriceInUsd,
+  })
+
+  try {
+    if (user && isAddress(user)) {
+      const userReserves =
+        await poolDataProviderContract.getUserReservesHumanized({
+          lendingPoolAddressProvider,
+          user,
+        })
+
+      formattedReserves = formatUserSummary({
+        currentTimestamp,
+        marketReferencePriceInUsd: marketReferenceCurrencyPriceInUsd,
+        marketReferenceCurrencyDecimals,
+        userReserves: userReserves.userReserves,
+        formattedReserves,
+        userEmodeCategoryId: userReserves.userEmodeCategoryId,
+      })
+    }
+  } catch (e) {
+    console.log(e)
+  }
+
+  return formattedReserves
+}
+
+
+export const getTransfersData = ({ transfers, token, balance }) => { 
+  const transfer_from = transfers.filter(
+    (transfer) => transfer._from.toLowerCase() == token.contract.toLowerCase()
+  )
+  const transfer_to = transfers.filter(
+    (transfer) => transfer._to.toLowerCase() == token.contract.toLowerCase()
+  )
+
+  const deposited = transfer_to.reduce(
+    (acc, transfer) => acc + BigInt(transfer._value),
+    0n
+  )
+
+  const withdrawn = transfer_from.reduce(
+    (acc, transfer) => acc + BigInt(transfer._value),
+    0n
+  )
+
+  const total = deposited - withdrawn
+
+  const interest = formatUnits(
+    BigInt(balance.value) - total,
+    token.assetDecimals
+  )
+
+  return { transfer_from, transfer_to, deposited, withdrawn, total, interest }
+
+}
+
+export const scanTransfers = async ({address, publicClient, rpc}) => {
+  if (!address) return
+
+  const fetchAndLogTransfers = async (startBlock, endBlock) => {
+    console.log(`Fetching transfers from block ${startBlock} to ${endBlock}`)
+    let txs = await fetch(
+      `/api/getTransfers?from=${address}&rpc=${rpc}&fromBlock=${startBlock}&toBlock=${endBlock}`
+    )
+    let data = await txs.json()
+    console.log(data)
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+  }
+
+  // Fetch user data to determine previously scanned blocks
+  let res = await fetch(`/api/user?address=${address}`)
+  let userData = await res.json()
+
+  // Get the current block number from the public client
+  let blockNumber = await publicClient.getBlockNumber()
+  blockNumber = Number(blockNumber)
+
+  console.log("Genesis Block (sDAI deploy block)", genesisBlock)
+  console.log("Current Block", blockNumber)
+
+  // Variables for the start and end of the block range to scan
+  let startBlock, endBlock
+
+  // First, scan from the last scanned block up to the current block, handling in batches if necessary
+  if (userData && userData.lastblock) {
+    endBlock = blockNumber
+    startBlock = Number(userData.lastblock) + 1
+
+    while (startBlock <= endBlock) {
+      let nextEndBlock = Math.min(startBlock + 9999, endBlock) // Calculate the next block to end this batch
+      await fetchAndLogTransfers(startBlock, nextEndBlock)
+      startBlock = nextEndBlock + 1 // Prepare the start of the next batch
+    }
+  }
+
+  // Second, scan from just below the first scanned block down to the genesis block, handling in batches if needed
+  if (userData && userData.firstblock) {
+    endBlock = Number(userData.firstblock) - 1
+    startBlock = Math.max(genesisBlock, endBlock - 9999)
+
+    while (startBlock > genesisBlock) {
+      await fetchAndLogTransfers(startBlock, endBlock)
+      endBlock = startBlock - 1
+      startBlock = Math.max(genesisBlock, endBlock - 9999)
+    }
+  }
+
+  // If there are no user data regarding firstblock and lastblock, scan everything from the current block to the genesis block in batches
+  if (!(userData && (userData.firstblock || userData.lastblock))) {
+    endBlock = blockNumber
+    startBlock = Math.max(genesisBlock, endBlock - 9999)
+
+    while (startBlock >= genesisBlock) {
+      await fetchAndLogTransfers(startBlock, endBlock)
+      endBlock = startBlock - 1
+      startBlock = Math.max(genesisBlock, endBlock - 9999)
+    }
+  }
 }

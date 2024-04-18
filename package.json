@@ -9,11 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aave/contract-helpers": "^1.28.0",
+    "@aave/math-utils": "^1.28.0",
+    "@bgd-labs/aave-address-book": "^2.25.1",
+    "@ethersproject/shims": "^5.7.0",
     "@vercel/postgres": "^0.8.0",
     "@wagmi/core": "^2.6.16",
+    "dayjs": "^1.11.10",
+    "ethers": "^5.7.2",
     "next": "14.2.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-icons": "^5.1.0",
     "viem": "^2.9.18",
     "wagmi": "^2.5.19"
   },
