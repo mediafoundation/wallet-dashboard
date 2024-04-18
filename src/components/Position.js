@@ -48,7 +48,7 @@ export const Position = ({
 
   return (
     <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl">
-      <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-lg dark:bg-black/50 gap-2 relative">
+      <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow dark:bg-black/50 gap-2 relative">
         <h2 className="text-2xl font-bold ">
           <a className="flex gap-2 items-center" href={link} target="_blank">
             <Image

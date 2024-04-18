@@ -235,100 +235,102 @@ export default function Home() {
   return (
     <main className="p-4 lg:p-24 relative">
       <div className="z-10 max-w-3xl text-lg mx-auto mb-4">
-        <div className="bg-gradient-to-b from-zinc-200 p-1 pr-4 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit w-auto  rounded-xl border bg-gray-200 flex leading-none items-center">
-          <Modal
-            title={"Settings"}
-            content={
-              <>
-                <p className="dark:text-white/80">RPC Url</p>
-                <input
-                  type="text"
-                  name="rpc"
-                  className="mt-4 bg-gradient-to-b from-zinc-200 px-3 py-3 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit rounded-xl border bg-gray-200 flex leading-none w-full"
-                  value={rpc}
-                  onChange={(e) => setRPCAndSaveToLocalStorage(e.target.value)}
-                  placeholder="Enter RPC Url"
-                />
-                <p className="mt-4 dark:text-white/80">Wallet Address</p>
-                <input
-                  type="text"
-                  name="wallet"
-                  className="mt-4 bg-gradient-to-b from-zinc-200 px-3 py-3 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit rounded-xl border bg-gray-200 flex leading-none w-full"
-                  value={address}
-                  onChange={(e) =>
-                    setAddressAndSaveToLocalStorage(e.target.value)
-                  }
-                  placeholder="Enter your wallet address"
-                />
-                <h3 className="mt-6  font-medium text-lg border-b pb-4 dark:border-white/10">
-                  Show/Hide Positions
-                </h3>
-                {tokens.map((token, index) => (
-                  <div key={index} className="mt-4">
-                    <label>
-                      <input
-                        className="mr-2"
-                        type="checkbox"
-                        id={token.name}
-                        name={token.name}
-                        defaultChecked={!hiddenPositions.includes(index)}
-                        checked={!hiddenPositions.includes(index)}
-                        onChange={() => toggleHiddenPosition(index)}
-                      />
-                      {token.description}
-                    </label>
-                  </div>
-                ))}
-              </>
-            }
-            onConfirm={() => console.log("Button confirm")}
-            buttons={[
-              {
-                role: "confirm",
-                toClose: true,
-                classes:
-                  "bg-green-800 px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200",
-                label: "Confirm",
-              },
-            ]}
-          >
-            <button>
-              <PiGearFineDuotone className="w-6 h-6 sm:h-7 sm:w-7" />
-            </button>
-          </Modal>
-
-          <button
-            className="p-2.5"
-            onClick={toggleCompact}
-          >
-            {compact ? (
-              <BsArrowsExpand className="w-5 h-5 sm:h-6 sm:w-6" />
-            ) : (
-              <BsArrowsCollapse className="w-5 h-5 sm:h-6 sm:w-6" />
-            )}
-          </button>
-          {loading ? (
-            <Loader className="w-5 h-5 sm:h-6 sm:w-6 ml-auto" />
-          ) : (
-            <div className="flex gap-3 ml-auto text-base sm:text-lg">
-              <span className="font-semibold ml-auto">
-                {toLocaleString(
-                  balances.reduce(
-                    (acc, balance) => acc + Number(balance.formatted),
-                    0
-                  ),
-                  0
-                )}
-              </span>
-              {transfers.length > 0 && balances && (
+        <div className=" dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit w-auto  rounded-xl border leading-none ">
+          <div className="rounded-xl shadow flex items-center p-1 pr-4">
+            <Modal
+              title={"Settings"}
+              content={
                 <>
-                  {" "}
-                  &middot;{" "}
-                  <span>{calculateInterest({ transfers, balances })}</span>
+                  <p className="dark:text-white/80">RPC Url</p>
+                  <input
+                    type="text"
+                    name="rpc"
+                    className="mt-4 bg-gradient-to-b from-zinc-200 px-3 py-3 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit rounded-xl border bg-gray-200 flex leading-none w-full"
+                    value={rpc}
+                    onChange={(e) => setRPCAndSaveToLocalStorage(e.target.value)}
+                    placeholder="Enter RPC Url"
+                  />
+                  <p className="mt-4 dark:text-white/80">Wallet Address</p>
+                  <input
+                    type="text"
+                    name="wallet"
+                    className="mt-4 bg-gradient-to-b from-zinc-200 px-3 py-3 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit rounded-xl border bg-gray-200 flex leading-none w-full"
+                    value={address}
+                    onChange={(e) =>
+                      setAddressAndSaveToLocalStorage(e.target.value)
+                    }
+                    placeholder="Enter your wallet address"
+                  />
+                  <h3 className="mt-6  font-medium text-lg border-b pb-4 dark:border-white/10">
+                    Show/Hide Positions
+                  </h3>
+                  {tokens.map((token, index) => (
+                    <div key={index} className="mt-4">
+                      <label>
+                        <input
+                          className="mr-2"
+                          type="checkbox"
+                          id={token.name}
+                          name={token.name}
+                          defaultChecked={!hiddenPositions.includes(index)}
+                          checked={!hiddenPositions.includes(index)}
+                          onChange={() => toggleHiddenPosition(index)}
+                        />
+                        {token.description}
+                      </label>
+                    </div>
+                  ))}
                 </>
+              }
+              onConfirm={() => console.log("Button confirm")}
+              buttons={[
+                {
+                  role: "confirm",
+                  toClose: true,
+                  classes:
+                    "bg-green-800 px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200",
+                  label: "Confirm",
+                },
+              ]}
+            >
+              <button>
+                <PiGearFineDuotone className="w-6 h-6 sm:h-7 sm:w-7" />
+              </button>
+            </Modal>
+
+            <button
+              className="p-2.5"
+              onClick={toggleCompact}
+            >
+              {compact ? (
+                <BsArrowsExpand className="w-5 h-5 sm:h-6 sm:w-6" />
+              ) : (
+                <BsArrowsCollapse className="w-5 h-5 sm:h-6 sm:w-6" />
               )}
-            </div>
-          )}
+            </button>
+            {loading ? (
+              <Loader className="w-5 h-5 sm:h-6 sm:w-6 ml-auto" />
+            ) : (
+              <div className="flex gap-3 ml-auto text-base sm:text-lg">
+                <span className="font-semibold ml-auto">
+                  {toLocaleString(
+                    balances.reduce(
+                      (acc, balance) => acc + Number(balance.formatted),
+                      0
+                    ),
+                    0
+                  )}
+                </span>
+                {transfers.length > 0 && balances && (
+                  <>
+                    {" "}
+                    &middot;{" "}
+                    <span>{calculateInterest({ transfers, balances })}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {address && (
@@ -376,7 +378,7 @@ export default function Home() {
                       {stop ? (
                         "Paused"
                       ) : (
-                        <>Reloading in {timer}s</>
+                        <>Reload in {timer}s</>
                       )}
                     </span>
                   </button>
@@ -384,10 +386,10 @@ export default function Home() {
                 <div>
                 <Modal
                   title={"AAVE Data"}
-                  width="max-h-[100vh]"
+                  width=""
                   content={
                     <>
-                      <div className="max-w-fit h-[100%] overflow-auto">
+                      <div className="">
                         {aaveData && aaveData.userReservesData && (
                           <Table rows={aaveData.userReservesData} />
                         )}
