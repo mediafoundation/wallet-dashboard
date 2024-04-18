@@ -14,39 +14,25 @@ import { AaveV3Ethereum } from "@bgd-labs/aave-address-book"
 import { formatReserves, formatUserSummary } from "@aave/math-utils"
 import dayjs from "dayjs"
 
-const {
-  UI_POOL_DATA_PROVIDER: uiPoolDataProviderAddress,
-  POOL_ADDRESSES_PROVIDER: lendingPoolAddressProvider,
-} = AaveV3Ethereum
+
+export const markets = {
+  "aave":{
+    poolDataProvider: AaveV3Ethereum.UI_POOL_DATA_PROVIDER,
+    poolProvider: AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
+  },
+  "spark": {
+    poolDataProvider: '0xF028c2F4b19898718fD0F77b9b881CbfdAa5e8Bb',
+    poolProvider: '0x02C3eA4e34C0cBd694D2adFa2c690EECbC1793eE',
+  }
+}
 
 export const genesisBlock = 16428133
 
 export const tokens = [
   {
-    name: "USDC",
-    description: "aEthUSDC",
-    logo: "/usdc.svg",
-    contract: "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
-    asset: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    assetDecimals: 6,
-    chainId: 1,
-    type: "ERC20",
-    genesis: 16496802,
-  },
-  {
-    name: "USDT",
-    description: "aEthUSDT",
-    logo: "/usdt.svg",
-    contract: "0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a",
-    asset: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    assetDecimals: 6,
-    chainId: 1,
-    type: "ERC20",
-    genesis: 16620256,
-  },
-  {
     name: "DAI",
     description: "sDAI",
+    spLogo: "/sdai.svg",
     logo: "/dai.svg",
     contract: "0x83F20F44975D03b1b09e64809B757c47f942BEeA",
     spToken: "0x4DEDf26112B3Ec8eC46e7E31EA5e123490B05B8B",
@@ -58,8 +44,33 @@ export const tokens = [
     genesis: 16428133,
   },
   {
+    name: "USDC",
+    description: "aEthUSDC",
+    spLogo: "/aethusdc.svg",
+    logo: "/usdc.svg",
+    contract: "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
+    asset: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    assetDecimals: 6,
+    chainId: 1,
+    type: "ERC20",
+    genesis: 16496802,
+  },
+  {
+    name: "USDT",
+    description: "aEthUSDT",
+    spLogo: "/aethusdt.svg",
+    logo: "/usdt.svg",
+    contract: "0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a",
+    asset: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    assetDecimals: 6,
+    chainId: 1,
+    type: "ERC20",
+    genesis: 16620256,
+  },
+  {
     name: "DAI",
     description: "aEthDAI",
+    spLogo: "/aethdai.svg",
     logo: "/dai.svg",
     contract: "0x018008bfb33d285247A21d44E50697654f754e63",
     asset: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
@@ -826,43 +837,47 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   return balances
 }
 
-export const fetchMarketData = async ({ user, rpc }) => {
-
-  const provider = new ethers.providers.JsonRpcProvider({
-    url: rpc,
-    skipFetchSetup: true,
-  })
-
-  const poolDataProviderContract = new UiPoolDataProvider({
-    uiPoolDataProviderAddress,
-    provider,
-    chainId: ChainId.mainnet,
-  })
-
-  const reserves = await poolDataProviderContract.getReservesHumanized({
-    lendingPoolAddressProvider,
-  })
-
-  const reservesArray = reserves.reservesData
-  const { marketReferenceCurrencyPriceInUsd, marketReferenceCurrencyDecimals } =
-    reserves.baseCurrencyData
-
-  const currentTimestamp = dayjs().unix()
-
-  let formattedReserves = formatReserves({
-    reserves: reservesArray,
-    currentTimestamp,
-    marketReferenceCurrencyDecimals,
-    marketReferencePriceInUsd: marketReferenceCurrencyPriceInUsd,
-  })
-
+export const fetchMarketData = async ({ user, rpc, market = "aave" }) => {
+  let formattedReserves = []
   try {
+    market = markets[market]
+    console.log(market)
+  
+    const provider = new ethers.providers.JsonRpcProvider({
+      url: rpc,
+      skipFetchSetup: true,
+    })
+  
+    const poolDataProviderContract = new UiPoolDataProvider({
+      uiPoolDataProviderAddress: market.poolDataProvider,
+      provider,
+      chainId: ChainId.mainnet,
+    })
+  
+    const reserves = await poolDataProviderContract.getReservesHumanized({
+      lendingPoolAddressProvider: market.poolProvider,
+    })
+  
+    const reservesArray = reserves.reservesData
+    const { marketReferenceCurrencyPriceInUsd, marketReferenceCurrencyDecimals } =
+      reserves.baseCurrencyData
+  
+    const currentTimestamp = dayjs().unix()
+  
+    formattedReserves = formatReserves({
+      reserves: reservesArray,
+      currentTimestamp,
+      marketReferenceCurrencyDecimals,
+      marketReferencePriceInUsd: marketReferenceCurrencyPriceInUsd,
+    })
+
     if (user && isAddress(user)) {
       const userReserves =
         await poolDataProviderContract.getUserReservesHumanized({
-          lendingPoolAddressProvider,
+          lendingPoolAddressProvider: market.poolProvider,
           user,
         })
+        console.log(userReserves)
 
       formattedReserves = formatUserSummary({
         currentTimestamp,
@@ -875,6 +890,7 @@ export const fetchMarketData = async ({ user, rpc }) => {
     }
   } catch (e) {
     console.log(e)
+    return false
   }
 
   return formattedReserves

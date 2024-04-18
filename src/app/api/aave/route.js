@@ -8,6 +8,11 @@ export async function GET(request) {
     request.nextUrl.searchParams.get("rpc") || "https://cloudflare-eth.com"
 
   const user = request.nextUrl.searchParams.get("address") || false
+  const market = request.nextUrl.searchParams.get("market") || false
 
-  return NextResponse.json(await fetchMarketData({ user, rpc }))
+  if (!market) {
+    return NextResponse.error("market param is required")
+  }
+
+  return NextResponse.json(await fetchMarketData({ user, rpc, market }))
 }

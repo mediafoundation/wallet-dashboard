@@ -96,6 +96,7 @@ export default function Home() {
   const [transfers, setTransfers] = useState([])
   const [compact, setCompact] = useState(false)
   const [aaveData, setAaveData] = useState({})
+  const [sparkData, setSparkData] = useState({})
   const [hiddenPositions, setHiddenPositions] = useState([])
   const [stop, setStop] = useState(false)
 
@@ -195,8 +196,12 @@ export default function Home() {
   }
 
   const getAaveData = async () => {
-    const _aaveData = await fetchMarketData({ user: address, rpc })
+    const _aaveData = await fetchMarketData({ user: address, rpc, market: "aave"})
     setAaveData(_aaveData)
+  }
+  const getSparkData = async () => {
+    const _sparkData = await fetchMarketData({ user: address, rpc, market: "spark"})
+    setSparkData(_sparkData)
   }
 
   const loadData = async () => {
@@ -204,6 +209,7 @@ export default function Home() {
     getBalances()
     getTransfers()
     getAaveData()
+    getSparkData()
     setTimer(interval)
   }
 
@@ -349,7 +355,7 @@ export default function Home() {
                         address={address}
                         transfers={transfers}
                         compact={compact}
-                        aaveData={aaveData}
+                        marketData={{aaveData, sparkData}}
                       />
                     </div>
                   )
@@ -400,7 +406,27 @@ export default function Home() {
                 >
                   <button className="text-center relative z-10">
                     <span className="flex items-center gap-2">
-                      <RiBarChartBoxLine className="inline" /> AAVE Data
+                      <RiBarChartBoxLine className="inline" /> AAVE
+                    </span>
+                  </button>
+                </Modal>
+                <Modal
+                  title={"Spark Data"}
+                  width=""
+                  content={
+                    <>
+                      <div className="">
+                        {sparkData && sparkData.userReservesData && (
+                          <Table rows={sparkData.userReservesData} />
+                        )}
+                      </div>
+                    </>
+                  }
+                  buttons={[]}
+                >
+                  <button className="text-center relative z-10">
+                    <span className="flex items-center gap-2">
+                      <RiBarChartBoxLine className="inline" /> Spark
                     </span>
                   </button>
                 </Modal>

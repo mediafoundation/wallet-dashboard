@@ -11,7 +11,7 @@ export const Position = ({
   address,
   transfers,
   compact,
-  aaveData,
+  marketData
 }) => {
   const { interest } = getTransfersData({
     transfers,
@@ -19,21 +19,27 @@ export const Position = ({
     balance,
   })
 
+  let data = [];
+
+  if (tokens[index].description == "sDAI") {
+    data = marketData.sparkData
+  } else {
+    data = marketData.aaveData
+  }
+
   let APY = <Loader className="w-4 inline" />
+
   if (
-    aaveData &&
-    aaveData.userReservesData &&
-    tokens[index].description !== "sDAI"
+    data &&
+    data.userReservesData
   ) {
-    let asset = aaveData.userReservesData.find(
+    let asset = data.userReservesData.find(
       (data) =>
         data.underlyingAsset.toLowerCase() === tokens[index].asset.toLowerCase()
     )
     APY = `${(Number(asset.reserve.supplyAPY) * 100 || 0).toFixed(2)}% APY`
   }
-  if (tokens[index].description == "sDAI") {
-    APY = `13% APY`
-  }
+
 
   let link = ""
   if (tokens[index].name === "DAI") {
@@ -49,16 +55,28 @@ export const Position = ({
   return (
     <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl">
       <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow dark:bg-black/50 gap-2 relative">
-        <h2 className="text-2xl font-bold ">
+        <h2 className="text-2xl font-bold flex gap-3">
           <a className="flex gap-2 items-center" href={link} target="_blank">
             <Image
-              src={tokens[index].logo}
+              src={tokens[index].spLogo}
               alt={tokens[index].name}
               width={32}
               height={32}
             />
-            <span>{tokens[index].name}</span>
-            <span className="text-xs">({tokens[index].description})</span>
+            <span>{tokens[index].description}</span>
+          </a>
+          <a 
+            className="flex items-center text-xs text-black/70 dark:text-white/70" 
+            href={`https://etherscan.io/token/${tokens[index].asset}?a=${address}`} 
+            target="_blank"
+          >
+            <span className="text-xs flex gap-2 py-1.5 px-2 border dark:border-white/5 dark:bg-zinc-950 rounded-lg"><Image
+              src={tokens[index].logo}
+              alt={tokens[index].name}
+              width={16}
+              height={16}
+            /> {tokens[index].name}
+            </span>
           </a>
         </h2>
         <div className="border-t dark:border-white/10  text-center font-mono w-full">
@@ -81,12 +99,12 @@ export const Position = ({
             compact && "hidden"
           }`}
         >
-          <a target="_blank" href={link} className=" py-2">
+          <span className="py-2">
             <span className="text-black/70 dark:text-white/70">
               TOTAL SUPPLIED:
             </span>{" "}
             {toLocaleString(Number(balance.totalSupplyFormatted), 0)}
-          </a>
+          </span>
           <p>
             <span className="text-black/70 dark:text-white/70">
               TOTAL BORROWED:
