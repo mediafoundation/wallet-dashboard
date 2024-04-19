@@ -696,8 +696,6 @@ export function Loader(props) {
 
 export function toLocaleString(number, units = 3) {
   return number.toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
     minimumFractionDigits: units,
     maximumFractionDigits: units,
   })

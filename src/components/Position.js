@@ -55,16 +55,22 @@ export const Position = ({
   return (
     <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl">
       <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow dark:bg-black/50 gap-2 relative">
-        <h2 className="text-2xl font-bold flex gap-3">
-          <a className="flex gap-2 items-center" href={link} target="_blank">
+        <h2 className="text-2xl sm:text-xl md:text-2xl font-bold flex justify-between w-full font-mono">
+          <a 
+            title={tokens[index].description} 
+            className="flex gap-2 items-center" 
+            href={`https://etherscan.io/token/${tokens[index].contract}?a=${address}`} 
+            target="_blank"
+          >
             <Image
               src={tokens[index].spLogo}
               alt={tokens[index].name}
               width={32}
               height={32}
             />
-            <span>{tokens[index].description}</span>
+            <span>{toLocaleString(Number(balance.formatted), Number(balance.formatted) > 100000 ? 0 : 2)}</span>
           </a>
+
           <a 
             className="flex items-center text-xs text-black/70 dark:text-white/70" 
             href={`https://etherscan.io/token/${tokens[index].asset}?a=${address}`} 
@@ -80,32 +86,27 @@ export const Position = ({
           </a>
         </h2>
         <div className="border-t dark:border-white/10  text-center font-mono w-full">
-          <a
-            className="text-2xl font-bold py-2 block"
-            href={`https://etherscan.io/token/${tokens[index].contract}?a=${address}`}
-            target="_blank"
-          >
-            {toLocaleString(Number(balance.formatted), 0)}
+          <a className="flex w-full justify-between mt-2" href={link} target="_blank">
+            <span>
+              <PiChartLineUpDuotone className="inline text-xl" />{" "}
+              <span className="font-bold text-green-600 dark:text-green-500">
+                {toLocaleString(Number(interest), 2)}
+              </span>
+            </span> {APY}
           </a>
-          <p>
-            <PiChartLineUpDuotone className="inline text-xl" />{" "}
-            <span className="font-bold text-green-600 dark:text-green-500">
-              {toLocaleString(Number(interest), 2)}
-            </span> &middot; {APY}
-          </p>
         </div>
         <div
           className={`w-full border-t py-2 dark:border-white/10 text-center text-sm font-mono ${
             compact && "hidden"
           }`}
         >
-          <span className="py-2">
+          <p className="flex w-full justify-between">
             <span className="text-black/70 dark:text-white/70">
               TOTAL SUPPLIED:
             </span>{" "}
             {toLocaleString(Number(balance.totalSupplyFormatted), 0)}
-          </span>
-          <p>
+          </p>
+          <p className="flex w-full justify-between">
             <span className="text-black/70 dark:text-white/70">
               TOTAL BORROWED:
             </span>{" "}
@@ -119,8 +120,10 @@ export const Position = ({
               0
             )}
           </p>
-          <p>
-            <span className="text-black/70 dark:text-white/70">AVAILABLE:</span>{" "}
+          <p className="flex w-full justify-between">
+            <span className="text-black/70 dark:text-white/70">
+              AVAILABLE LIQ.:
+            </span>{" "}
             {toLocaleString(Number(balance.underlying.formatted), 0)}
           </p>
 
