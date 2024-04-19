@@ -630,6 +630,44 @@ export const fetchBalances = async ({
   }
 }
 
+
+export const calculateInterest = ({ transfers, balances }) => {
+  let interest = 0n
+  tokens.forEach((token) => {
+    const transfer_from = transfers.filter(
+      (transfer) => transfer._from.toLowerCase() == token.contract.toLowerCase()
+    )
+    const transfer_to = transfers.filter(
+      (transfer) => transfer._to.toLowerCase() == token.contract.toLowerCase()
+    )
+
+    const deposited = transfer_to.reduce(
+      (acc, transfer) => acc + BigInt(transfer._value),
+      0n
+    )
+
+    const withdrawn = transfer_from.reduce(
+      (acc, transfer) => acc + BigInt(transfer._value),
+      0n
+    )
+
+    const _total = deposited - withdrawn
+
+    let _interest =
+      BigInt(
+        balances.find((balance) => balance.symbol === token.description).value
+      ) - _total
+
+    //give 18 decimals to usdt and usdc so we can add up with DAI that has 18 decimals
+    if (token.name === "USDT" || token.name === "USDC") {
+      _interest = _interest * 10n ** 12n
+    }
+    //total += _total,
+    interest += _interest
+  })
+  return toLocaleString(Number(formatEther(interest)), 2)
+}
+
 export function Loader(props) {
   return (
     <svg
@@ -839,8 +877,7 @@ export const fetchMarketData = async ({ user, rpc, market = "aave" }) => {
   let formattedReserves = []
   try {
     market = markets[market]
-    console.log(market)
-  
+
     const provider = new ethers.providers.JsonRpcProvider({
       url: rpc,
       skipFetchSetup: true,
@@ -875,7 +912,6 @@ export const fetchMarketData = async ({ user, rpc, market = "aave" }) => {
           lendingPoolAddressProvider: market.poolProvider,
           user,
         })
-        console.log(userReserves)
 
       formattedReserves = formatUserSummary({
         currentTimestamp,

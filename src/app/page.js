@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { http, createConfig } from "wagmi"
 import { getPublicClient } from "@wagmi/core"
 import { mainnet } from "wagmi/chains"
-import { isAddress, getAddress, formatEther } from "viem"
+import { isAddress, getAddress } from "viem"
 import {
   Loader,
   tokens,
@@ -13,9 +13,10 @@ import {
   getTransfers as _getTransfers,
   multiBalanceCall,
   fetchMarketData,
+  calculateInterest,
 } from "../utils"
-import Modal from "../components/Modal"
-import Position from "../components/Position"
+import { Modal } from "../components/Modal"
+import { Position } from "../components/Position"
 import { AiOutlineReload } from "react-icons/ai"
 import { RiBarChartBoxLine } from "react-icons/ri"
 import {
@@ -24,67 +25,10 @@ import {
   PiPauseDuotone,
 } from "react-icons/pi"
 import { BsArrowsExpand, BsArrowsCollapse } from "react-icons/bs"
-import DynamicDataTable from "@langleyfoxall/react-dynamic-data-table"
+import { Table } from "@/components/Table"
 
 const interval = 30
 
-const calculateInterest = ({ transfers, balances }) => {
-  let interest = 0n
-  tokens.forEach((token) => {
-    const transfer_from = transfers.filter(
-      (transfer) => transfer._from.toLowerCase() == token.contract.toLowerCase()
-    )
-    const transfer_to = transfers.filter(
-      (transfer) => transfer._to.toLowerCase() == token.contract.toLowerCase()
-    )
-
-    const deposited = transfer_to.reduce(
-      (acc, transfer) => acc + BigInt(transfer._value),
-      0n
-    )
-
-    const withdrawn = transfer_from.reduce(
-      (acc, transfer) => acc + BigInt(transfer._value),
-      0n
-    )
-
-    const _total = deposited - withdrawn
-
-    let _interest =
-      BigInt(
-        balances.find((balance) => balance.symbol === token.description).value
-      ) - _total
-
-    //give 18 decimals to usdt and usdc so we can add up with DAI that has 18 decimals
-    if (token.name === "USDT" || token.name === "USDC") {
-      _interest = _interest * 10n ** 12n
-    }
-    //total += _total,
-    interest += _interest
-  })
-  return toLocaleString(Number(formatEther(interest)), 2)
-}
-
-const Table = ({ rows }) => {
-  if (!rows) return null
-  // only take row.reserve of each row
-  let market = rows.map((row) => row.reserve)
-
-  for (let i = 0; i < market.length; i++) {
-    market[i].userUnderlyingBalance = rows[i].underlyingBalance
-  }
-
-  return (
-    <>
-      <DynamicDataTable
-        buttons={[]}
-        className="table-fixed whitespace-nowrap text-left [&_td]:border-b [&_th]:border-b [&_th]:dark:border-white/25 [&_th]:pb-1  [&_td]:dark:border-white/10 [&_td]:pr-2 [&_th]:pr-3"
-        rows={market}
-        fieldsToExclude={["id"]}
-      />
-    </>
-  )
-}
 
 export default function Home() {
   const [balances, setBalances] = useState([])
@@ -381,10 +325,8 @@ export default function Home() {
                   >
                     <span className="flex items-center gap-2">
                       <AiOutlineReload className="text-xl inline" /> 
-                      {stop ? (
-                        "Paused"
-                      ) : (
-                        <>Reload in {timer}s</>
+                      {!stop && (
+                        <>{timer}s</>
                       )}
                     </span>
                   </button>
@@ -397,7 +339,7 @@ export default function Home() {
                     <>
                       <div className="">
                         {aaveData && aaveData.userReservesData && (
-                          <Table rows={aaveData.userReservesData} />
+                          <Table rows={aaveData.userReservesData} compact={compact}/>
                         )}
                       </div>
                     </>
@@ -417,7 +359,7 @@ export default function Home() {
                     <>
                       <div className="">
                         {sparkData && sparkData.userReservesData && (
-                          <Table rows={sparkData.userReservesData} />
+                          <Table rows={sparkData.userReservesData} compact={compact} />
                         )}
                       </div>
                     </>
