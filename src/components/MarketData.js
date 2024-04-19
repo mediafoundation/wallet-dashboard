@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react"
+import { useEffect } from "react"
 import { Modal } from "@/components/Modal"
 import { Table } from "@/components/Table"
 import { RiBarChartBoxLine } from "react-icons/ri"
@@ -6,21 +6,22 @@ import { BsArrowsExpand, BsArrowsCollapse } from "react-icons/bs"
 
 export const MarketData = ({ data, compactData, setCompactData }) => {
 
+  const toggleCompact = () => {
+    if (compactData) {
+      setCompactData(false)
+      localStorage.removeItem("compactData")
+    } else {
+      setCompactData(true)
+      localStorage.setItem("compactData", true)
+    }
+  }
 
-  const ToggleCompact = useMemo(() => {
+  const ToggleCompactData = ({toggleCompact, compactData}) => {
 
-    return () => (
+    return (
       <button
         className={"p-2"}
-        onClick={() => {
-          if (compactData) {
-            setCompactData(false)
-            localStorage.removeItem("compactData")
-          } else {
-            setCompactData(true)
-            localStorage.setItem("compactData", true)
-          }
-        }}
+        onClick={toggleCompact}
       >
         {compactData ? (
           <BsArrowsExpand className={"text-base"} />
@@ -29,7 +30,7 @@ export const MarketData = ({ data, compactData, setCompactData }) => {
         )}
       </button>
     )
-  }, [compactData]);
+  }
 
   useEffect(() => {
     if (localStorage.getItem("compactData")) {
@@ -42,7 +43,7 @@ export const MarketData = ({ data, compactData, setCompactData }) => {
       <Modal
         title={
           <div className="flex items-center justify-between w-full">
-            <span>{data.MarketName} Data</span> <ToggleCompact />
+            <span>{data.MarketName} Data</span> <ToggleCompactData compactData={compactData} toggleCompact={toggleCompact} />
           </div>
         }
         width=""

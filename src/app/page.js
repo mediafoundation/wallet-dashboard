@@ -28,6 +28,20 @@ import MarketData from "@/components/MarketData"
 
 const interval = 30
 
+const ToggleCompact = ({compact, toggleCompact, className="p-2.5", iconClassName="w-5 h-5 sm:h-6 sm:w-6"}) => {
+  return (
+    <button
+      className={className}
+      onClick={toggleCompact}
+    >
+      {compact ? (
+        <BsArrowsExpand className={iconClassName} />
+      ) : (
+        <BsArrowsCollapse className={iconClassName} />
+      )}
+    </button>
+  )
+}
 
 export default function Home() {
   const [balances, setBalances] = useState([])
@@ -53,20 +67,6 @@ export default function Home() {
       localStorage.setItem("compact", true)
     }
   }
-  const ToggleCompact = useMemo(() => {
-    return ({className="p-2.5", iconClassName="w-5 h-5 sm:h-6 sm:w-6"}) => (
-      <button
-        className={className}
-        onClick={toggleCompact}
-      >
-        {compact ? (
-          <BsArrowsExpand className={iconClassName} />
-        ) : (
-          <BsArrowsCollapse className={iconClassName} />
-        )}
-      </button>
-    )
-  }, [compact]);
 
   const toggleHiddenPosition = (index) => {
     let newPositions
@@ -265,7 +265,7 @@ export default function Home() {
               </button>
             </Modal>
 
-            <ToggleCompact />
+            <ToggleCompact compact={compact} toggleCompact={toggleCompact} />
             {loading ? (
               <Loader className="w-5 h-5 sm:h-6 sm:w-6 ml-auto" />
             ) : (
