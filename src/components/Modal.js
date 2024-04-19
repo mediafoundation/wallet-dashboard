@@ -38,7 +38,7 @@ export const Modal = ({
             <div className={`bg-white dark:bg-zinc-950 border dark:border-white/10 max-h-[100dvh] m-2 sm:m-4 rounded-xl`}>
               <div className="shadow-lg p-4 rounded-xl">
                 <div className="w-full flex justify-between items-center pb-4 mb-6 border-b dark:border-white/10 ">
-                    <p className="font-medium text-lg">{title}</p>
+                    <h3 className="font-medium text-lg w-full">{title}</h3>
                     <div onClick={() => HandleChange()} className="w-8 h-8 flex justify-center items-center rounded-lg transition-all duration-200 cursor-pointer hover:bg-zinc-500/20 dark:text-white/80">
                         <svg className="fill-current" width="24px" height="24px" viewBox="0 0 36 36" version="1.1" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
                             <path className="clr-i-outline clr-i-outline-path-1" d="M19.41,18l8.29-8.29a1,1,0,0,0-1.41-1.41L18,16.59,9.71,8.29A1,1,0,0,0,8.29,9.71L16.59,18,8.29,26.29a1,1,0,1,0,1.41,1.41L18,19.41l8.29,8.29a1,1,0,0,0,1.41-1.41Z" />

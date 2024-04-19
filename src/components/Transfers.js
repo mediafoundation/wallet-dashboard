@@ -1,7 +1,6 @@
 import { getTransfersData } from "@/utils";
 import { formatUnits } from "viem"
 import Modal from "../components/Modal"
-import { Loader } from "../utils"
 
 export const Transfers = ({ transfers, token, balance }) => {
 

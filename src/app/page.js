@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { http, createConfig } from "wagmi"
 import { getPublicClient } from "@wagmi/core"
 import { mainnet } from "wagmi/chains"
@@ -15,17 +15,16 @@ import {
   fetchMarketData,
   calculateInterest,
 } from "../utils"
-import { Modal } from "../components/Modal"
-import { Position } from "../components/Position"
+import { Modal } from "@/components/Modal"
+import { Position } from "@/components/Position"
 import { AiOutlineReload } from "react-icons/ai"
-import { RiBarChartBoxLine } from "react-icons/ri"
 import {
   PiGearFineDuotone,
   PiPlayDuotone,
   PiPauseDuotone,
 } from "react-icons/pi"
 import { BsArrowsExpand, BsArrowsCollapse } from "react-icons/bs"
-import { Table } from "@/components/Table"
+import MarketData from "@/components/MarketData"
 
 const interval = 30
 
@@ -39,6 +38,7 @@ export default function Home() {
   const [rpc, setRpc] = useState("")
   const [transfers, setTransfers] = useState([])
   const [compact, setCompact] = useState(false)
+  const [compactData, setCompactData] = useState(false)
   const [aaveData, setAaveData] = useState({})
   const [sparkData, setSparkData] = useState({})
   const [hiddenPositions, setHiddenPositions] = useState([])
@@ -53,6 +53,21 @@ export default function Home() {
       localStorage.setItem("compact", true)
     }
   }
+  const ToggleCompact = useMemo(() => {
+    return ({className="p-2.5", iconClassName="w-5 h-5 sm:h-6 sm:w-6"}) => (
+      <button
+        className={className}
+        onClick={toggleCompact}
+      >
+        {compact ? (
+          <BsArrowsExpand className={iconClassName} />
+        ) : (
+          <BsArrowsCollapse className={iconClassName} />
+        )}
+      </button>
+    )
+  }, [compact]);
+
   const toggleHiddenPosition = (index) => {
     let newPositions
     if (hiddenPositions.includes(index)) {
@@ -140,11 +155,13 @@ export default function Home() {
   }
 
   const getAaveData = async () => {
-    const _aaveData = await fetchMarketData({ user: address, rpc, market: "aave"})
+    let _aaveData = await fetchMarketData({ user: address, rpc, market: "aave"})
+    _aaveData.MarketName = "AAVE"
     setAaveData(_aaveData)
   }
   const getSparkData = async () => {
-    const _sparkData = await fetchMarketData({ user: address, rpc, market: "spark"})
+    let _sparkData = await fetchMarketData({ user: address, rpc, market: "spark"})
+    _sparkData.MarketName = "SPARK"
     setSparkData(_sparkData)
   }
 
@@ -248,16 +265,7 @@ export default function Home() {
               </button>
             </Modal>
 
-            <button
-              className="p-2.5"
-              onClick={toggleCompact}
-            >
-              {compact ? (
-                <BsArrowsExpand className="w-5 h-5 sm:h-6 sm:w-6" />
-              ) : (
-                <BsArrowsCollapse className="w-5 h-5 sm:h-6 sm:w-6" />
-              )}
-            </button>
+            <ToggleCompact />
             {loading ? (
               <Loader className="w-5 h-5 sm:h-6 sm:w-6 ml-auto" />
             ) : (
@@ -308,7 +316,7 @@ export default function Home() {
               <div className="mt-8 px-4 flex justify-between max-w-3xl mx-auto">
                 <div>
                   <button
-                    className="text-center relative z-10 p-2.5"
+                    className="text-center relative z-10"
                     onClick={() => setStop(!stop)}
                   >
                     <span className="flex items-center gap-2">
@@ -326,52 +334,14 @@ export default function Home() {
                     <span className="flex items-center gap-2">
                       <AiOutlineReload className="text-xl inline" /> 
                       {!stop && (
-                        <>{timer}s</>
+                        <span className="text-sm">{timer}s</span>
                       )}
                     </span>
                   </button>
                 </div>
                 <div>
-                <Modal
-                  title={"AAVE Data"}
-                  width=""
-                  content={
-                    <>
-                      <div className="">
-                        {aaveData && aaveData.userReservesData && (
-                          <Table rows={aaveData.userReservesData} compact={compact}/>
-                        )}
-                      </div>
-                    </>
-                  }
-                  buttons={[]}
-                >
-                  <button className="text-center relative z-10">
-                    <span className="flex items-center gap-2">
-                      <RiBarChartBoxLine className="inline" /> AAVE
-                    </span>
-                  </button>
-                </Modal>
-                <Modal
-                  title={"Spark Data"}
-                  width=""
-                  content={
-                    <>
-                      <div className="">
-                        {sparkData && sparkData.userReservesData && (
-                          <Table rows={sparkData.userReservesData} compact={compact} />
-                        )}
-                      </div>
-                    </>
-                  }
-                  buttons={[]}
-                >
-                  <button className="text-center relative z-10">
-                    <span className="flex items-center gap-2">
-                      <RiBarChartBoxLine className="inline" /> Spark
-                    </span>
-                  </button>
-                </Modal>
+                  <MarketData data={aaveData} compactData={compactData} setCompactData={setCompactData} />
+                  <MarketData data={sparkData} compactData={compactData} setCompactData={setCompactData} />
                 </div>
               </div>
 
