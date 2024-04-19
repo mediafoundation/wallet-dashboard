@@ -11,7 +11,8 @@ export const Position = ({
   address,
   transfers,
   compact,
-  marketData
+  marketData,
+  toggleHiddenPosition
 }) => {
   const { interest } = getTransfersData({
     transfers,
@@ -53,8 +54,8 @@ export const Position = ({
   }
 
   return (
-    <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl">
-      <div className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow dark:bg-black/50 gap-2 relative">
+    <div className="w-full flex gap-4 z-20 relative border dark:border-white/10 rounded-xl dark:bg-zinc-950">
+      <div className="w-full flex flex-col items-center justify-center p-6  rounded-xl shadow  gap-2 relative">
         <h2 className="text-2xl sm:text-xl md:text-2xl font-bold flex justify-between w-full font-mono">
           <a 
             title={tokens[index].description} 
@@ -72,7 +73,8 @@ export const Position = ({
           </a>
 
           <a 
-            className="flex items-center text-xs text-black/70 dark:text-white/70" 
+            title={`View ${tokens[index].name} on Etherscan`}
+            className="flex items-center text-xs text-black/70 dark:text-white/70 font-sans" 
             href={`https://etherscan.io/token/${tokens[index].asset}?a=${address}`} 
             target="_blank"
           >
@@ -85,7 +87,7 @@ export const Position = ({
             </span>
           </a>
         </h2>
-        <div className="border-t dark:border-white/10  text-center font-mono w-full">
+        <div className="border-t dark:border-white/5 text-center font-mono w-full">
           <a className="flex w-full justify-between mt-2" href={link} target="_blank">
             <span>
               <PiChartLineUpDuotone className="inline text-xl" />{" "}
@@ -96,7 +98,7 @@ export const Position = ({
           </a>
         </div>
         <div
-          className={`w-full border-t py-2 dark:border-white/10 text-center text-sm font-mono ${
+          className={`w-full border-t py-2 dark:border-white/5 text-center text-sm font-mono ${
             compact && "hidden"
           }`}
         >
@@ -131,6 +133,8 @@ export const Position = ({
             transfers={transfers}
             token={tokens[index]}
             balance={balance}
+            index={index}
+            toggleHiddenPosition={toggleHiddenPosition}
           />
         </div>
       </div>

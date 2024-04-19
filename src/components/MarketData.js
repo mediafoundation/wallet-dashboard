@@ -50,7 +50,10 @@ export const MarketData = ({ data, compactData, setCompactData }) => {
         content={<Table rows={data.userReservesData} compact={compactData} />}
         buttons={[]}
       >
-      <button className="text-center relative z-10">
+      <button 
+        title={`View ${data.MarketName} Data`}
+        className="text-center relative z-10"
+      >
         <span className="flex items-center gap-2">
           <RiBarChartBoxLine className="inline" /> {data.MarketName}
         </span>

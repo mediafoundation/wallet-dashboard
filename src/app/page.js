@@ -228,7 +228,7 @@ export default function Home() {
                     }
                     placeholder="Enter your wallet address"
                   />
-                  <h3 className="mt-6  font-medium text-lg border-b pb-4 dark:border-white/10">
+                  <h3 className="mt-6  font-medium text-lg border-b pb-4 dark:border-white/5">
                     Show/Hide Positions
                   </h3>
                   {tokens.map((token, index) => (
@@ -308,6 +308,7 @@ export default function Home() {
                         transfers={transfers}
                         compact={compact}
                         marketData={{aaveData, sparkData}}
+                        toggleHiddenPosition={toggleHiddenPosition}
                       />
                     </div>
                   )
@@ -316,6 +317,7 @@ export default function Home() {
               <div className="mt-8 px-4 flex justify-between max-w-3xl mx-auto">
                 <div>
                   <button
+                    title="Pause/Resume auto-refresh"
                     className="text-center relative z-10"
                     onClick={() => setStop(!stop)}
                   >
@@ -328,6 +330,7 @@ export default function Home() {
                     </span>
                   </button>
                   <button
+                    title="Reload data"
                     className="text-center relative z-10"
                     onClick={() => loadData()}
                   >

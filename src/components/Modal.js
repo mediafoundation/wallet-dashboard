@@ -37,7 +37,7 @@ export const Modal = ({
           <div className={`relative z-[100] w-full ${width} `}>
             <div className={`bg-white dark:bg-zinc-950 border dark:border-white/10 max-h-[100dvh] m-2 sm:m-4 rounded-xl`}>
               <div className="shadow-lg p-4 rounded-xl">
-                <div className="w-full flex justify-between items-center pb-4 mb-6 border-b dark:border-white/10 ">
+                <div className="w-full flex justify-between items-center pb-4 mb-6 border-b dark:border-white/5 ">
                     <h3 className="font-medium text-lg w-full">{title}</h3>
                     <div onClick={() => HandleChange()} className="w-8 h-8 flex justify-center items-center rounded-lg transition-all duration-200 cursor-pointer hover:bg-zinc-500/20 dark:text-white/80">
                         <svg className="fill-current" width="24px" height="24px" viewBox="0 0 36 36" version="1.1" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
