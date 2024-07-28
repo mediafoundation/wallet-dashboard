@@ -10,15 +10,14 @@ import {
 
 import { ethers } from "ethers"
 import { UiPoolDataProvider, ChainId } from "@aave/contract-helpers"
-import { AaveV3Ethereum } from "@bgd-labs/aave-address-book"
 import { formatReserves, formatUserSummary } from "@aave/math-utils"
 import dayjs from "dayjs"
 
 
 export const markets = {
   "aave":{
-    poolDataProvider: AaveV3Ethereum.UI_POOL_DATA_PROVIDER,
-    poolProvider: AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
+    poolDataProvider: "0x5c5228aC8BC1528482514aF3e27E692495148717",
+    poolProvider: "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e",
   },
   "spark": {
     poolDataProvider: '0xF028c2F4b19898718fD0F77b9b881CbfdAa5e8Bb',
