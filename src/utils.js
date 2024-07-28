@@ -960,7 +960,7 @@ export const getTransfersData = ({ transfers, token, balance }) => {
 
 }
 
-export const scanTransfers = async ({address, publicClient, rpc, maxBlocks = 800}) => {
+export const scanTransfers = async ({address, publicClient, rpc, maxBlocks = 500}) => {
   if (!address) return
   maxBlocks = maxBlocks - 1;
   const fetchAndLogTransfers = async (startBlock, endBlock) => {
