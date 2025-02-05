@@ -78,6 +78,18 @@ export const tokens = [
     type: "ERC20",
     genesis: 16496806,
   },
+  {
+    name: "WETH",
+    description: "aEthWETH",
+    spLogo: "/aethweth.svg",
+    logo: "/weth.svg",
+    contract: "0x4d5f47fa6a74757f35c14fd3a6ef8e3c9bc514e8",
+    asset: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    assetDecimals: 18,
+    chainId: 1,
+    type: "ERC20",
+    genesis: 16496792,
+  },
 ]
 
 export const erc4626 = [
@@ -801,12 +813,14 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   let balances = []
   let i = 0
 
+  let prices = await getPrices();
   for (const token of tokens) {
+    let value = prices[token.name] ? ((BigInt(Number(prices[token.name]) * 1000) / BigInt(1000)) * results[i].result) : results[i].result
     balances.push({
       symbol: token.description,
       decimals: token.assetDecimals,
-      value: results[i].result,
-      formatted: formatUnits(results[i].result, token.assetDecimals),
+      value: value,
+      formatted: formatUnits(value, token.assetDecimals),
       underlying: {
         decimals: token.assetDecimals,
         symbol: token.name,
@@ -954,9 +968,20 @@ export const getTransfersData = ({ transfers, token, balance }) => {
     BigInt(balance.value) - total,
     token.assetDecimals
   )
+  
 
   return { transfer_from, transfer_to, deposited, withdrawn, total, interest }
 
+}
+
+export const getPrices = async () => {
+  let prices = {};
+
+  const response = await fetch(`https://api.coinbase.com/v2/prices/ETH-USD/spot`);
+  const data = await response.json();
+  prices['WETH'] = data.data.amount;
+
+  return prices;
 }
 
 export const scanTransfers = async ({address, publicClient, rpc, maxBlocks = 250}) => {
