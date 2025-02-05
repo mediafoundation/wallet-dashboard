@@ -43,19 +43,19 @@ export const MarketData = ({ data, compactData, setCompactData }) => {
       <Modal
         title={
           <div className="flex items-center justify-between w-full">
-            <span>{data.MarketName} Data</span> <ToggleCompactData compactData={compactData} toggleCompact={toggleCompact} />
+            <span>{data?.MarketName} Data</span> <ToggleCompactData compactData={compactData} toggleCompact={toggleCompact} />
           </div>
         }
         width=""
-        content={<Table rows={data.userReservesData} compact={compactData} />}
+        content={<Table rows={data?.userReservesData} compact={compactData} />}
         buttons={[]}
       >
       <button 
-        title={`View ${data.MarketName} Data`}
+        title={`View ${data?.MarketName} Data`}
         className="text-center relative z-10"
       >
         <span className="flex items-center gap-2">
-          <RiBarChartBoxLine className="inline" /> {data.MarketName}
+          <RiBarChartBoxLine className="inline" /> {data?.MarketName}
         </span>
       </button>
       </Modal>
