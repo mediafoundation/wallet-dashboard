@@ -156,11 +156,13 @@ export default function Home() {
 
   const getAaveData = async () => {
     let _aaveData = await fetchMarketData({ user: address, rpc, market: "aave"})
+    if(!_aaveData) return
     _aaveData.MarketName = "AAVE"
     setAaveData(_aaveData)
   }
   const getSparkData = async () => {
     let _sparkData = await fetchMarketData({ user: address, rpc, market: "spark"})
+    if(!_sparkData) return
     _sparkData.MarketName = "SPARK"
     setSparkData(_sparkData)
   }

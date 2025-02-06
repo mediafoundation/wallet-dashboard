@@ -38,7 +38,8 @@ export const Position = ({
       (data) =>
         data.underlyingAsset.toLowerCase() === tokens[index].asset.toLowerCase()
     )
-    APY = `${(Number(asset.reserve.supplyAPY) * 100 || 0).toFixed(2)}% APY`
+    //console.log("asset reserve",asset?.reserve)
+    APY = `${(Number(asset?.reserve?.supplyAPY) * 100 || 0).toFixed(2)}% APY`
   }
 
 

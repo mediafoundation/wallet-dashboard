@@ -9,8 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aave/contract-helpers": "^1.28.0",
-    "@aave/math-utils": "^1.28.0",
+    "@aave/contract-helpers": "^1.31.1",
+    "@aave/math-utils": "^1.31.1",
+    "@bgd-labs/aave-address-book": "^4.9.0",
     "@langleyfoxall/react-dynamic-data-table": "^7.18.0",
     "@vercel/postgres": "^0.8.0",
     "@wagmi/core": "^2.6.16",

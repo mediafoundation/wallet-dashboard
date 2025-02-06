@@ -10,17 +10,22 @@ import {
 
 import { ethers } from "ethers"
 import { UiPoolDataProvider, ChainId } from "@aave/contract-helpers"
-import { formatReserves, formatUserSummary } from "@aave/math-utils"
+import { formatReserves, formatUserSummary, calculateCompoundedRate, RAY_DECIMALS, SECONDS_PER_YEAR, normalize } from "@aave/math-utils"
+
+import { AaveV3Ethereum } from "@bgd-labs/aave-address-book";
+
 import dayjs from "dayjs"
 
 
 export const markets = {
   "aave":{
-    poolDataProvider: "0x5c5228aC8BC1528482514aF3e27E692495148717",
-    poolProvider: "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e",
+    //poolDataProvider: "0x5c5228aC8BC1528482514aF3e27E692495148717",
+    //poolProvider: "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e",
+    poolDataProvider: AaveV3Ethereum.UI_POOL_DATA_PROVIDER,
+    poolProvider: AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
   },
   "spark": {
-    poolDataProvider: '0xF028c2F4b19898718fD0F77b9b881CbfdAa5e8Bb',
+    poolDataProvider: '0xF028c2F4b19898718fD0F77b9b881CbfdAa5e8Bb'.toLowerCase(),
     poolProvider: '0x02C3eA4e34C0cBd694D2adFa2c690EECbC1793eE',
   }
 }
@@ -886,6 +891,7 @@ export const multiBalanceCall = async ({ publicClient, address, tokens }) => {
   return balances
 }
 
+
 export const fetchMarketData = async ({ user, rpc, market = "aave" }) => {
   let formattedReserves = []
   try {
@@ -902,15 +908,120 @@ export const fetchMarketData = async ({ user, rpc, market = "aave" }) => {
       chainId: ChainId.mainnet,
     })
   
+/*     async function getReservesHumanized({
+      lendingPoolAddressProvider,
+    }) {
+      const { 0: reservesRaw, 1: poolBaseCurrencyRaw } =
+        await poolDataProviderContract.getReservesData({ lendingPoolAddressProvider });
+        console.log("reservesRaw", reservesRaw)
+  
+      const reservesData = reservesRaw.map(
+        (reserveRaw, index) => {
+          return {
+            originalId: index,
+            id: `${poolDataProviderContract.chainId}-${reserveRaw.underlyingAsset}-${lendingPoolAddressProvider}`.toLowerCase(),
+            underlyingAsset: reserveRaw.underlyingAsset.toLowerCase(),
+            name: reserveRaw.name,
+            symbol: reserveRaw.symbol,
+            decimals: reserveRaw.decimals.toNumber(),
+            baseLTVasCollateral: reserveRaw.baseLTVasCollateral.toString(),
+            reserveLiquidationThreshold:
+              reserveRaw.reserveLiquidationThreshold.toString(),
+            reserveLiquidationBonus:
+              reserveRaw.reserveLiquidationBonus.toString(),
+            reserveFactor: reserveRaw.reserveFactor.toString(),
+            usageAsCollateralEnabled: reserveRaw.usageAsCollateralEnabled,
+            borrowingEnabled: reserveRaw.borrowingEnabled,
+            isActive: reserveRaw.isActive,
+            isFrozen: reserveRaw.isFrozen,
+            liquidityIndex: reserveRaw.liquidityIndex.toString(),
+            variableBorrowIndex: reserveRaw.variableBorrowIndex.toString(),
+            liquidityRate: reserveRaw.liquidityRate.toString(),
+            variableBorrowRate: reserveRaw.variableBorrowRate.toString(),
+            lastUpdateTimestamp: reserveRaw.lastUpdateTimestamp,
+            aTokenAddress: reserveRaw.aTokenAddress.toString(),
+            variableDebtTokenAddress:
+              reserveRaw.variableDebtTokenAddress.toString(),
+            interestRateStrategyAddress:
+              reserveRaw.interestRateStrategyAddress.toString(),
+            availableLiquidity: reserveRaw.availableLiquidity.toString(),
+            totalScaledVariableDebt:
+              reserveRaw.totalScaledVariableDebt.toString(),
+            priceInMarketReferenceCurrency:
+              reserveRaw.priceInMarketReferenceCurrency.toString(),
+            priceOracle: reserveRaw.priceOracle,
+            variableRateSlope1: reserveRaw.variableRateSlope1.toString(),
+            variableRateSlope2: reserveRaw.variableRateSlope2.toString(),
+            baseVariableBorrowRate: reserveRaw.baseVariableBorrowRate.toString(),
+            optimalUsageRatio: reserveRaw.optimalUsageRatio.toString(),
+            // new fields
+            isPaused: reserveRaw.isPaused,
+            debtCeiling: reserveRaw.debtCeiling.toString(),
+            borrowCap: reserveRaw.borrowCap.toString(),
+            supplyCap: reserveRaw.supplyCap.toString(),
+            borrowableInIsolation: reserveRaw.borrowableInIsolation,
+            accruedToTreasury: reserveRaw.accruedToTreasury.toString(),
+            unbacked: reserveRaw.unbacked.toString(),
+            isolationModeTotalDebt: reserveRaw.isolationModeTotalDebt.toString(),
+            debtCeilingDecimals: reserveRaw.debtCeilingDecimals,
+            isSiloedBorrowing: reserveRaw.isSiloedBorrowing,
+            flashLoanEnabled: reserveRaw.flashLoanEnabled,
+            virtualAccActive: reserveRaw.virtualAccActive,
+            virtualUnderlyingBalance: reserveRaw.virtualUnderlyingBalance.toString()
+          };
+        },
+      );
+  
+      const baseCurrencyData = {
+        // this is to get the decimals from the unit so 1e18 = string length of 19 - 1 to get the number of 0
+        marketReferenceCurrencyDecimals:
+          poolBaseCurrencyRaw.marketReferenceCurrencyUnit.toString().length - 1,
+        marketReferenceCurrencyPriceInUsd:
+          poolBaseCurrencyRaw.marketReferenceCurrencyPriceInUsd.toString(),
+        networkBaseTokenPriceInUsd:
+          poolBaseCurrencyRaw.networkBaseTokenPriceInUsd.toString(),
+        networkBaseTokenPriceDecimals:
+          poolBaseCurrencyRaw.networkBaseTokenPriceDecimals,
+      };
+  
+      return {
+        reservesData,
+        baseCurrencyData,
+      };
+    }
+
+    const reservesData = await poolDataProviderContract.getReservesData({
+      lendingPoolAddressProvider: market.poolProvider,
+    })
+
+    console.log("reservesData", reservesData, markets[market])
+    
+
+    const supplyAPY = normalize(
+      calculateCompoundedRate(
+        { 
+          rate: reservesData[0][0].liquidityRate.toString(), 
+          duration: SECONDS_PER_YEAR 
+        }),
+      RAY_DECIMALS
+    )
+
+    console.log("supplyAPY",supplyAPY) */
+
     const reserves = await poolDataProviderContract.getReservesHumanized({
       lendingPoolAddressProvider: market.poolProvider,
     })
+
+    //console.log("reserves", reserves)
   
     const reservesArray = reserves.reservesData
     const { marketReferenceCurrencyPriceInUsd, marketReferenceCurrencyDecimals } =
       reserves.baseCurrencyData
   
     const currentTimestamp = dayjs().unix()
+
+    //console.log("reservesArray",reservesArray)
+    //console.log("reserves.baseCurrencyData",reserves.baseCurrencyData)
   
     formattedReserves = formatReserves({
       reserves: reservesArray,
@@ -939,7 +1050,7 @@ export const fetchMarketData = async ({ user, rpc, market = "aave" }) => {
     console.log(e)
     return false
   }
-
+  console.log("formattedReserves", formattedReserves)
   return formattedReserves
 }
 
